@@ -88,6 +88,112 @@ and November it would not exist.
 **This is the project's argument in one line: train where optical works, deploy
 where it does not.**
 
+## The deployment gap — the project's biggest validity problem
+
+**Status: open. To be worked through before Phase 3 labelling begins.**
+
+The prototype accepts **any latitude and longitude on Earth**. The model, as
+currently planned, would be trained on three areas in the Rhine valley.
+
+A model trained on temperate German river plain will produce confident, wrong
+maps over a desert, a rainforest or an alpine valley. It will not fail loudly —
+it will return a plausible-looking land-cover map that is simply incorrect. That
+is worse than refusing to answer.
+
+This is the single largest threat to the project being *valid* rather than merely
+*finished*, and it has to be addressed before labelling starts, because labelling
+is what locks in which places the model knows.
+
+### What we verified
+
+Sentinel-1 RTC is available **worldwide** — wherever raw GRD exists, the
+terrain-corrected product exists at essentially the same count. No need to fall
+back to processing raw scenes ourselves.
+
+But acquisition density varies about sevenfold:
+
+| Region | Scenes per year | Passes per month |
+|---|---|---|
+| Finland, Spain, Egypt, Germany | 170–212 | plentiful |
+| Argentina, Vietnam, India | 90–118 | workable |
+| Iowa, Shanghai | ~57 | thin |
+| **Amazon, Sahel, New South Wales** | **~30** | **1–3 total** |
+
+ESA prioritises Europe. Much of the southern hemisphere gets a fraction of the
+coverage.
+
+**This matters beyond convenience.** Our monthly composites over Germany average
+7–8 passes and come out clean. A composite over the Sahel might rest on a single
+pass and be far noisier. So a globally deployed model faces *two* shifts at once:
+different landscapes, and different noise levels.
+
+### The approach to take
+
+**1. Many areas, sparsely labelled — the key move.**
+
+Semantic segmentation does not require every pixel of a training image to be
+labelled. Unlabelled pixels are simply excluded from the loss. The model still
+sees the full radar tile as input; it just is not scored on the parts we skipped.
+
+So the choice is not "3 areas labelled fully" versus "15 areas labelled fully".
+It is **the same number of clicks, spread across five times as many places.**
+Geographic coverage is what this model lacks, and this buys it at no extra
+labelling cost.
+
+**2. Choose areas deliberately, not conveniently.**
+
+Stratify by climate zone and by the classes we need. Every class should appear in
+several different climates — "built-up" in a European city, a Nile delta town and
+a Brazilian city are not the same radar signature. Avoid regions with ~30 scenes
+a year unless they are the only source of a land cover type we need.
+
+**3. Train with the noise the deployment will actually have.**
+
+Our training composites are built from 7–8 passes. Much of the world gets 1–3.
+If the model only ever sees clean data it will degrade badly on noisy data for
+reasons that look like a modelling failure.
+
+Fix: during training, sometimes build composites from fewer passes, and augment
+with extra speckle. Make the model see the full range of data quality it will
+meet.
+
+**4. Tell the user when we are guessing.**
+
+Keep the worldwide input, but measure whether the incoming radar resembles the
+training data, and say so on screen when it does not.
+
+This is honest, cheap, and a genuine deep learning contribution rather than a
+disclaimer — out-of-distribution detection is a real topic and suits the course.
+A prototype that says "this location is unlike anything I was trained on, treat
+with caution" is more defensible than one that silently guesses.
+
+**5. The hemisphere trap.**
+
+If Phase 5 uses a three-month input window to catch the crop cycle, that window
+encodes a *northern* growing season. Deployed in Argentina or Australia, the
+seasons are inverted and the model would be exactly wrong.
+
+Two ways out: include southern-hemisphere areas in training, or feed the month
+relative to the local growing season rather than as a calendar month. Decide
+before building that experiment.
+
+**6. A clean experiment this creates.**
+
+Does standardising each scene by its own statistics improve transfer to unseen
+regions? It should reduce the effect of regional differences in absolute
+brightness, at the cost of discarding information — water is dark in an absolute
+sense, and that is useful.
+
+That is a well-formed ablation with a real answer, and it belongs in Phase 5.
+
+### What this does not fix
+
+Even done well, a student project cannot claim a globally validated model. The
+honest end state is: trained across *n* regions, tested on held-out regions,
+with measured performance per climate zone and an explicit statement of where it
+has not been tested. That is a much stronger claim than an unqualified one, and
+it is true.
+
 ## Decisions and their trade-offs
 
 ### Label regions, not points

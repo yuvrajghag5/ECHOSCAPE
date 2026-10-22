@@ -20,6 +20,7 @@ time.
 | 1. Radar acquisition | Monthly Sentinel-1 composites | **done** — 36 files |
 | 2. Optical acquisition | Matching Sentinel-2, aligned to the radar grid | **done** — 31 files |
 | 2b. Data evaluation | What the radar alone can tell us, before labelling | skeleton written, not run |
+| 2c. Global area selection | Which places the model will know | **open - blocks Phase 3** |
 | 3. Labelling | Hand-made land-cover masks | not started |
 | 4. Dataset assembly | Training tiles and splits | not started |
 | 5. Training | Trained model weights | not started |
@@ -110,6 +111,38 @@ needs a small option to keep single scenes.
 **Done when.** The findings table at the end of the notebook is filled in, and
 the class count for Phase 3 has been decided from evidence rather than
 assumption.
+
+---
+
+## Phase 2c — Global area selection  **(blocks Phase 3)**
+
+**Goal.** Decide which places the model will know about, before any labelling
+locks that choice in.
+
+**Why it comes first.** The prototype takes any latitude and longitude on Earth.
+Three areas in the Rhine valley cannot support that. Labelling is what commits us
+to a set of places, so the set has to be chosen before labelling starts — see
+**The deployment gap** in `design.md`.
+
+**Verified already.** Sentinel-1 RTC exists worldwide, so any area is reachable.
+But acquisition density varies about sevenfold: Europe gets 170–210 scenes a
+year, the Amazon, the Sahel and inland Australia get about 30. Thin regions
+produce noisier composites, which is a second domain shift on top of the
+landscape one.
+
+**To do.**
+
+1. Pick 12–18 areas stratified by climate zone, making sure every class appears
+   in several climates. Check scene counts per candidate before committing.
+2. Reserve 2–3 whole areas, in climates not represented in training, as the
+   held-out test set.
+3. Decide the labelling budget per area. **Sparse labelling across many areas
+   beats dense labelling of few** — unlabelled pixels are simply excluded from
+   the loss, so the same number of clicks buys far more geographic coverage.
+4. Download them. Roughly 31 MB per area-year; 18 areas is about 560 MB.
+
+**Done when.** The area list exists with a justification per area, scene counts
+are checked, and the train/test split by region is fixed in writing.
 
 ---
 
