@@ -217,20 +217,6 @@ vegetation, bare / sparse.
 **Tooling.** The annotation tool being built for the AI Vision course. A crude
 fallback script must exist first so this phase cannot block on that tool.
 
-**Measure your own consistency.** After labelling a few regions, re-label two or
-three tiles **without looking at the first attempt**, and measure how much the
-two agree.
-
-That number is the ceiling on what the model can achieve. If you only agree with
-yourself 80% of the time, a model scoring 80% has matched human consistency and
-further tuning is chasing noise. It costs half an hour and it is the difference
-between "the model got 0.62" and "the model got 0.62 against a human ceiling of
-0.81". Most student projects never establish this.
-
-**Record the date each label came from.** Labels are drawn once on a single
-cloud-free optical image and applied to all twelve months of radar — see "The
-labels are annual, the radar is monthly" in `design.md`.
-
 **Two separate label sets are required:**
 1. **Training masks** — the bulk, over most areas.
 2. **A test set** — a different area, labelled independently, never used in
