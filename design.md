@@ -236,6 +236,33 @@ coarser and comfortably satisfies it.
 The cost is losing field boundaries and street-level structure. For area
 percentages over a 20 km box, that does not matter.
 
+### Build the model, do not import it
+
+The U-Net is written from scratch in PyTorch rather than pulled from a library
+with pretrained weights.
+
+The presentational reason is real — this is a Deep Learning course and the
+architecture is what is being assessed — but it is not the main one. The main
+one is **size**. A pretrained ResNet-34 U-Net carries about 24 million
+parameters. Our dataset is roughly 2,000 tiles from 168 distinct ground
+positions. A model that large on data that small memorises rather than learns.
+A hand-built U-Net at 1–2 million parameters is simply better matched to the
+problem.
+
+It also frees the input design. Pretrained weights force exactly three input
+channels; our own model can take two, or four with a texture measure, or nine
+for a three-month window. The architecture follows the data rather than the
+other way round.
+
+**The trade-off:** writing the training loop means owning its bugs, and a
+silently wrong implementation can look like a data problem for days. The
+mitigation is a discipline, not a library: before trusting any run, deliberately
+overfit ten tiles. A correct model drives the loss to near zero on ten examples
+in minutes. If it cannot, the fault is in the code.
+
+The pretrained version is still built — as Phase 5's second experiment, to
+measure ours against.
+
 ### One orbit track per area
 
 Radar brightness depends on the angle the satellite looked from. Mixing ascending

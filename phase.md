@@ -210,11 +210,22 @@ experiments supporting them are sound. Budget time accordingly.
 **Goal.** A model that turns radar into a land-cover map, plus the experiments
 that justify its design.
 
-**Approach.** U-Net with a ResNet-18 or ResNet-34 encoder. Class-weighted loss
-because water and built-up are rare compared with farmland. Nodata pixels
-excluded from the loss entirely. Augmentation includes flips and rotations plus
-two radar-specific ones: artificial speckle and a small random brightness shift,
-which together buy month-to-month stability.
+**Approach.** A **U-Net written from scratch in PyTorch** — roughly four
+down-blocks, base width 32, batch normalisation, skip connections, about 1–2
+million parameters. Not imported from a library: in a Deep Learning course the
+architecture is the thing being assessed, and 24 million pretrained parameters
+would badly overfit 168 distinct ground positions anyway. See `tech.md`.
+
+Class-weighted loss because water and built-up are rare compared with farmland.
+Nodata pixels excluded from the loss entirely. Augmentation includes flips and
+rotations plus two radar-specific ones: artificial speckle and a small random
+brightness shift, which together buy month-to-month stability.
+
+**Before trusting any training run:** take ten tiles and deliberately overfit
+them. A correct implementation should drive the loss to near zero on ten
+examples within a couple of minutes. If it cannot, the bug is in the code, not
+the data or the hyperparameters — and this catches it in minutes rather than
+after a day of confusing results. Do this first, every time the model changes.
 
 **Hardware.** RTX 3050, 4 GB. At 50 m with 128×128 tiles this is comfortable, and
 a full run takes well under an hour — so several experiments fit in a day.
@@ -233,12 +244,21 @@ it, the texture around a pixel does not matter much for this problem — itself 
 finding. If it beats it clearly, that gap is the justification for using deep
 learning here at all.
 
-**2. Pretrained encoder vs trained from scratch.** ImageNet weights were learned
-on ordinary photographs. Radar is not photographs. Does that transfer?
+**2. Our model vs a pretrained one.** Build the same U-Net shape with an
+ImageNet-pretrained ResNet-18 encoder, via `segmentation_models_pytorch`, and
+compare.
 
-A genuinely interesting question rather than a box-ticking ablation, and the
-answer is not obvious. Stacking `[VV, VH, VV/VH]` as three channels is what makes
-the comparison possible without modifying the first layer.
+ImageNet weights were learned on ordinary photographs. Radar is not photographs.
+Does that transfer? The answer is genuinely not obvious, and it cuts both ways:
+pretrained features usually help when data is scarce, but 24 million parameters
+on 168 distinct ground positions invites memorisation.
+
+Whichever wins, it is a result worth reporting — and reporting that our own
+smaller model matched or beat a pretrained one on this data would be a stronger
+finding than the reverse.
+
+Note this comparison needs `[VV, VH, VV/VH]` as exactly three channels, since the
+pretrained first layer expects three. Our own model has no such constraint.
 
 **3. Single-month input vs a three-month window.** Feed months (m−1, m, m+1) as
 nine channels and predict month m.

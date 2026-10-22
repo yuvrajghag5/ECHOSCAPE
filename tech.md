@@ -14,7 +14,8 @@ written down next to the choice.
 | HTTP | requests | 1, 2, 7 |
 | Clustering for data evaluation | scikit-learn (KMeans, silhouette) | 2b |
 | Label helper model | scikit-learn (Random Forest) | 3 |
-| Deep learning | PyTorch + segmentation_models_pytorch | 5, 6 |
+| Deep learning | PyTorch — **U-Net written from scratch** | 5, 6 |
+| Pretrained comparison only | segmentation_models_pytorch | 5 |
 | Web prototype | Streamlit + streamlit-folium | 7 |
 | Plots | matplotlib | all |
 | Notebooks | Jupyter | 8 |
@@ -99,22 +100,40 @@ Its job is to extend human labels across an area, not to be the final model.
 
 ## PyTorch + segmentation_models_pytorch
 
-`segmentation_models_pytorch` provides U-Net with pretrained encoders in a few
-lines. It is a thin, well-maintained wrapper over PyTorch rather than a separate
-framework, so the model stays fully inspectable and modifiable — which matters for
-a Deep Learning course, where the model itself is under scrutiny and not just the
-pipeline feeding it.
+**The main model is written from scratch in plain PyTorch**, not imported from a
+library. This is a Deep Learning course: the architecture is the thing being
+assessed, and a model we built and can account for line by line is worth more
+than a one-line import.
 
-**U-Net** because it is the standard architecture for semantic segmentation on
-small datasets. It keeps fine detail through skip connections and trains on a few
-thousand tiles, which a transformer would not.
+There are three substantive reasons beyond that, not just presentation:
 
-**ResNet-18 or ResNet-34 encoder, ImageNet-pretrained.** Radar is not photographs,
-but the early layers of an ImageNet encoder learn edges and textures, which
-transfer usefully. Stacking VV, VH and their ratio as three channels lets the
-pretrained weights be used unchanged rather than discarded.
+**1. Size.** A ResNet-34 U-Net carries roughly 24 million parameters. Our dataset
+is about 2,000 tiles drawn from 168 distinct ground positions. That is enormous
+overcapacity, and overcapacity on a small dataset means memorisation rather than
+learning. A hand-built U-Net at around 1–2 million parameters is far better
+matched, and on 4 GB of video memory it also trains faster, which means more
+experiments.
 
-**Not a transformer.** Too little data, and 4 GB of video memory.
+**2. ImageNet is photographs. Radar is not.** Pretrained encoders learn edges and
+textures from natural images. Whether that transfers to backscatter is a genuine
+open question here, not a given — so it belongs in the experiments section as
+something to test, not in the design as an assumption.
+
+**3. It frees the input.** Using pretrained weights forces exactly three input
+channels. Building our own means the input can be whatever serves the problem —
+two channels, or four with a texture measure added, or nine for a three-month
+window. The architecture follows the data instead of the data being bent to fit
+the architecture.
+
+**U-Net** as the shape, because it is the standard for semantic segmentation on
+small datasets: an encoder that compresses, a decoder that expands, and skip
+connections carrying fine detail across so boundaries survive. Roughly four
+down-blocks, base width 32, batch normalisation throughout.
+
+**Not a transformer.** Far too little data, and 4 GB of video memory.
+
+**`segmentation_models_pytorch` is still installed** — but only to construct the
+pretrained comparison model in Phase 5, as something to measure ours against.
 
 ## Streamlit for the prototype
 
