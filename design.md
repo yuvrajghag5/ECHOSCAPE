@@ -307,6 +307,31 @@ two passes from the same month.
 
 ## Known limitations, stated up front
 
+### The labels are annual, the radar is monthly
+
+A label is drawn once, on a single cloud-free optical image, and then applied to
+**all twelve months** of radar for that pixel.
+
+That is defensible — land *cover* class is an annual property, and a field is
+cropland in March whether or not anything is growing on it. But it has two
+consequences that must be stated rather than discovered:
+
+1. **One class covers a very wide range of radar appearances.** "Cropland" must
+   mean bare soil in March, dense growth in July and stubble in October. That
+   makes the class genuinely harder to learn, and it is part of why cropland and
+   grass are expected to confuse.
+2. **It sharpens the conceptual tension in the brief.** The model is trained to
+   be month-*invariant*, then asked to produce twelve month-*varying* maps.
+   Unaddressed, that looks like a bug. Addressed, it is the finding: the class
+   is stable, the signal is not, and only variation larger than the measured
+   noise floor should be read as real change.
+
+**Practical consequences.** Label from an image in the middle of the growing
+season, record which date each label came from, and treat genuinely seasonal
+land — flooded versus dry rice paddy, for instance — as a known weak point.
+
+### Known limitations, stated up front
+
 | Limitation | Why | Response |
 |---|---|---|
 | Cropland vs grass is unreliable | Their radar signatures overlap 71% at 10 m, 61% at 50 m — physically, not a modelling flaw | Report per-class scores honestly; consider multi-month input |
