@@ -1,0 +1,19 @@
+# Normalise line endings.
+#
+# Without this, Git on Windows rewrites every file between LF and CRLF, which
+# makes whole files look changed when nothing in them has. That noise already
+# cost us once: fetch_s2.py was silently dropped from version control during a
+# commit because it looked entirely rewritten. See changes.md, Phase 2 (g).
+#
+# "text=auto eol=lf" stores everything with LF in the repository, regardless of
+# what the working copy uses.
+* text=auto eol=lf
+
+# Never touch binary files
+*.png binary
+*.jpg binary
+*.tif binary
+*.pt  binary
+
+# Notebooks are JSON; treat as text but do not try to merge them line by line
+*.ipynb text eol=lf

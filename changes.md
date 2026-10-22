@@ -150,6 +150,29 @@ The monthly median turns out to do more of the cleaning than the resolution
 reduction does. Worth stating in the report, because it justifies compositing as
 the more important step.
 
+**(h) The resolution was picked by feel, then checked.**
+50 m was chosen at the start from reasoning alone. It was later changed to 100 m
+on the grounds that coarser is cleaner and the professor asked for low
+resolution — which sounded right and was wrong.
+
+Downloading the same area and month at 25 m, 50 m and 100 m settled it:
+
+| | 25 m | **50 m** | 100 m |
+|---|---|---|---|
+| Image size | 1159 × 1113 | **579 × 557** | 290 × 278 |
+| Training tiles (128 px, 3 areas × 12 months) | 9,792 | **2,016** | **324** |
+| Noise, effective looks | 26.7 | **60.1** | 113.6 |
+
+100 m leaves only **324 training tiles in total**, which cannot train a U-Net to
+separate six classes. And the noise argument for going coarser turns out to be
+already spent: a single raw pass has about 4 effective looks, but by 25 m the
+monthly median over 7–8 passes has already reached 26.7. **The compositing does
+nearly all the noise removal before resolution is involved at all.**
+
+So going 50 → 100 m bought cleanliness that was not needed and paid for it with
+three quarters of the data. Reverted to 50 m, now with evidence rather than
+assertion. Figure saved as `data/resolution_comparison.png`.
+
 ## Measurements worth keeping
 
 | Quantity | Value |
@@ -304,6 +327,35 @@ tool found the right files and reported `50m` correctly.
 *intent for the next run*. It is not a reliable description of data already
 written. Anything already on disk should be discovered, not predicted. A filename
 built from a mutable setting is a guess dressed up as a fact.
+
+**(g) A source file silently left version control.**
+After a routine `git add -A` and commit, `fetch_s2.py` — 243 lines, the entire
+Sentinel-2 downloader — was no longer tracked by Git. The commit recorded it as
+deleted. The file was still sitting in the folder, so nothing looked wrong
+locally, and it had already been pushed to GitHub in an earlier commit, so the
+repository looked complete too. It was found only by listing tracked files
+against the folder contents.
+
+Nothing was lost: comparing the working copy against the last committed version
+showed the two were identical apart from line endings.
+
+**Cause.** No `.gitattributes`. Git on Windows was converting between LF and CRLF
+on every operation, which made whole files appear completely rewritten — the diff
+showed all 243 lines changed when not one character had. That churn is what the
+file was lost inside.
+
+**Fix.** Added `.gitattributes` with `* text=auto eol=lf`, so the repository
+always stores LF regardless of what the working copy uses, and re-added the file.
+
+**The lesson, which generalises past Git:** `add -A`, `--force`, `rm -r` and
+similar sweeping commands do exactly what they are told across everything at
+once, and report success either way. After any bulk operation on a repository,
+compare what is tracked against what is actually there. It costs one command:
+
+```
+git ls-files | sort > /tmp/tracked
+git status --short     # anything marked ?? that should not be
+```
 
 ---
 

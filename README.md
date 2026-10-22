@@ -18,16 +18,21 @@ area percentages and month-to-month change.
 | `phase.md` | All 8 phases, what each produces, current status |
 | `tech.md` | Every tool choice with its reason, and what was deliberately avoided |
 | `changes.md` | Build log — per phase: what was built, what broke, how it was fixed |
+| `evaluation/data_eval.ipynb` | Ten checks to run on the radar alone, before labelling |
 
 | Stage | State |
 |---|---|
-| 1. Download radar (Sentinel-1) | **working** |
-| 2. Download colour (Sentinel-2) + alignment check | **working** |
+| 1. Download radar (Sentinel-1) | **done** — 36 monthly composites |
+| 2. Download colour (Sentinel-2) + alignment check | **done** — 31 composites, aligned |
+| 2b. Evaluate the data before labelling | skeleton written, not run |
 | 3. Label the data | not started |
 | 4. Assemble the dataset | not started |
 | 5. Train the model | not started |
-| 6. Evaluate | not started |
+| 6. Evaluate the model | not started |
 | 7. Prototype | not started |
+
+Current dataset: three areas × 12 months at **50 m**, about 220 MB on disk.
+Not in this repository — see **Data** below.
 
 ## Setup
 

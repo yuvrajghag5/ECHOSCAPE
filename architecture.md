@@ -115,6 +115,8 @@ evidence. Matching metadata alone is not.
 | `check_alignment.py` | Prove radar and optical describe the same ground. |
 | `preview.py` | Visual sanity check of the radar composites. |
 | `compare_s1_s2.py` | Side-by-side radar vs optical, for the report. |
+| `to_png.py` | Convert GeoTIFFs to ordinary PNGs. The `.tif` files hold decimal measurements and map coordinates, so normal image viewers cannot open them. |
+| `evaluation/data_eval.ipynb` | Ten checks on the radar alone, before labelling. Sections written, not yet run. |
 
 ### Planned 🔜
 
@@ -178,6 +180,20 @@ One Sentinel-1 scene is ~1 GB covering 250 × 170 km. The study area is 29 × 28
 The data API takes a bounding box and an output size and returns a correctly
 georeferenced GeoTIFF. This single decision is what makes the project feasible on
 home internet, and it also means no GDAL-level handling of enormous files.
+
+## Rule: discover, do not predict
+
+Filenames carry the resolution: `mannheim_2021-09_50m.tif`. Nothing builds that
+name from `config.py`.
+
+Configuration describes **intent for the next run**. It is not a description of
+data already on disk, because it can be edited in between — and was. Every tool
+therefore searches for `*_<month>_*.tif` and reads what it finds. `fetch_s2.py`
+takes its resolution tag from the radar file it actually matched, so an output
+file can never claim a resolution it was not written at.
+
+If several resolutions are present, the tools say which file they chose and warn,
+rather than silently taking whichever sorts first.
 
 ## Invariants
 

@@ -100,13 +100,32 @@ genuinely human-made masks for a few hundred clicks. Slower per area than dottin
 but it satisfies "label it yourself" literally, with no argument to have later
 about whether a Random Forest did the labelling.
 
-### 50 m pixels, not 10 m
+### 50 m pixels — not 10 m, and not 100 m
 
-Required by the professor, but it helps rather than hurts.
+Required by the professor to be coarse, but 50 m was chosen by measurement, not
+by feel. The same area and month was downloaded at three resolutions:
 
-Radar carries heavy speckle noise — within one uniform field, brightness varies by
-7.7 dB. Averaging pixels together removes most of it. Coarser radar is
-*radiometrically cleaner*, the opposite of how resolution works for photographs.
+| | 25 m | **50 m** | 100 m |
+|---|---|---|---|
+| Image size | 1159 × 1113 | **579 × 557** | 290 × 278 |
+| Training tiles available (128 px, 3 areas × 12 months) | 9,792 | **2,016** | **324** |
+| Noise, as effective looks (higher is cleaner) | 26.7 | **60.1** | 113.6 |
+| Size per month | 10.2 MB | **2.6 MB** | 0.6 MB |
+
+**100 m fails on data volume.** The whole 29 × 28 km area becomes 290 × 278
+pixels, yielding only 324 training tiles in total — far too few for a U-Net
+separating six classes. No choice of tile size fixes this: 100 m data simply
+contains a quarter of the measurements.
+
+**The noise argument for going coarser is already spent.** A single raw pass has
+about 4 effective looks. By 25 m the monthly median over 7–8 passes has already
+brought that to 26.7. Compositing does nearly all the noise removal before
+resolution is involved at all, so going from 50 to 100 m buys cleanliness that
+was not needed and pays for it with three quarters of the data.
+
+**25 m was rejected** for being only 2.5× coarser than Sentinel-1's native 10 m,
+which is a weak answer to "do not train on high-resolution data". 50 m is 5×
+coarser and comfortably satisfies it.
 
 The cost is losing field boundaries and street-level structure. For area
 percentages over a 20 km box, that does not matter.

@@ -17,8 +17,9 @@ time.
 | Phase | What it produces | State |
 |---|---|---|
 | 0. Setup | Working environment | **done** |
-| 1. Radar acquisition | Monthly Sentinel-1 composites | **done** |
-| 2. Optical acquisition | Matching Sentinel-2, aligned to the radar grid | in progress |
+| 1. Radar acquisition | Monthly Sentinel-1 composites | **done** — 36 files |
+| 2. Optical acquisition | Matching Sentinel-2, aligned to the radar grid | **done** — 31 files |
+| 2b. Data evaluation | What the radar alone can tell us, before labelling | skeleton written, not run |
 | 3. Labelling | Hand-made land-cover masks | not started |
 | 4. Dataset assembly | Training tiles and splits | not started |
 | 5. Training | Trained model weights | not started |
@@ -75,6 +76,40 @@ model must run on radar.
 for human viewing, on the radar grid.
 
 **Done when.** At least one clear optical composite per area, aligned and checked.
+
+**Done.** 31 monthly composites across the three areas — 10 for `mannheim`, 10
+for `karlsruhe`, 11 for `odenwald`. Fewer than twelve each because some months
+are too cloudy to use at all. Alignment with the radar verified.
+
+---
+
+## Phase 2b — Data evaluation
+
+**Goal.** Understand what the radar alone can and cannot do, **before** spending
+days on labelling.
+
+**Why it has its own phase.** Two of its checks can change the plan:
+
+- How many classes does the data actually support? If the answer is four, then
+  labelling six is wasted effort — and the class list is the hardest decision to
+  undo once labelling has started.
+- Do crops reveal themselves across twelve months? If not, the three-month input
+  experiment planned for Phase 5 has no basis and should be dropped.
+
+A third sets numbers that would otherwise be guessed: how far apart two pixels
+must be before they are independent, which fixes the tile size and justifies
+splitting the data by whole area rather than by tile.
+
+**Where.** `evaluation/data_eval.ipynb` — ten checks, written out as sections
+with notes. No code yet.
+
+**Needs.** `scikit-learn`, not yet installed. Sections 3 and 10 also need
+individual satellite passes rather than monthly composites, so `fetch_s1.py`
+needs a small option to keep single scenes.
+
+**Done when.** The findings table at the end of the notebook is filled in, and
+the class count for Phase 3 has been decided from evidence rather than
+assumption.
 
 ---
 

@@ -12,6 +12,7 @@ written down next to the choice.
 | Geospatial file handling | rasterio | 1–7 |
 | Arrays and maths | numpy | all |
 | HTTP | requests | 1, 2, 7 |
+| Clustering for data evaluation | scikit-learn (KMeans, silhouette) | 2b |
 | Label helper model | scikit-learn (Random Forest) | 3 |
 | Deep learning | PyTorch + segmentation_models_pytorch | 5, 6 |
 | Web prototype | Streamlit + streamlit-folium | 7 |
