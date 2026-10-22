@@ -23,6 +23,28 @@ import rasterio
 import config
 
 
+def pick(matches, folder, pattern, hint):
+    """Choose one file, and say so out loud if there was a choice to make.
+
+    More than one resolution can sit in the same folder if the settings were
+    changed between downloads. Silently taking the first one alphabetically
+    would be a quiet way to compare the wrong files.
+    """
+    if not matches:
+        raise SystemExit(f"Nothing matching {pattern} in {folder}.\n{hint}")
+    if len(matches) == 1:
+        return matches[0]
+    preferred = [p for p in matches
+                 if p.stem.endswith(f"_{config.TARGET_RES_M}m")]
+    chosen = preferred[0] if preferred else matches[0]
+    others = ", ".join(p.name for p in matches if p != chosen)
+    print(f"  NOTE: several resolutions present. Using {chosen.name}")
+    print(f"        (ignoring {others})")
+    print(f"        Keep one resolution per dataset - mixing them will cause")
+    print(f"        confusion later. See TARGET_RES_M in config.py.\n")
+    return chosen
+
+
 def stretch(values, low=2, high=98):
     finite = values[np.isfinite(values)]
     if finite.size == 0:
@@ -42,18 +64,14 @@ def main():
     # the current setting would simply miss files that are already there.
     s2_dir = config.S2_MONTHLY / args.aoi
     pattern = f"*_{args.month}_*.tif" if args.month else "*.tif"
-    candidates = sorted(s2_dir.glob(pattern))
-    if not candidates:
-        raise SystemExit(f"No colour images matching {pattern} in {s2_dir}.\n"
-                         f"Run fetch_s2.py --aoi {args.aoi} first.")
-    s2_path = candidates[0]
+    s2_path = pick(sorted(s2_dir.glob(pattern)), s2_dir, pattern,
+                   f"Run fetch_s2.py --aoi {args.aoi} first.")
 
     month = s2_path.stem.split("_")[1]
-    s1_matches = sorted((config.S1_MONTHLY / args.aoi).glob(f"*_{month}_*.tif"))
-    if not s1_matches:
-        raise SystemExit(f"No radar for {month}. Run fetch_s1.py --months "
-                         f"{int(month[-2:])} first.")
-    s1_path = s1_matches[0]
+    s1_dir = config.S1_MONTHLY / args.aoi
+    s1_path = pick(sorted(s1_dir.glob(f"*_{month}_*.tif")), s1_dir,
+                   f"*_{month}_*.tif",
+                   f"Run fetch_s1.py --months {int(month[-2:])} first.")
 
     with rasterio.open(s1_path) as radar, rasterio.open(s2_path) as colour:
         checks = [

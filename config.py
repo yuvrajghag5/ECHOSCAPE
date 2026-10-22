@@ -9,7 +9,7 @@ Change things in this file, not inside the scripts.
 # The professor said "do not train on high-resolution data", so we work at 50 m
 # instead of Sentinel-1's native 10 m. This also removes most of the radar
 # speckle noise. Changing this number changes the whole pipeline.
-TARGET_RES_M = 100
+TARGET_RES_M = 50
 
 # ---------------------------------------------------------------- study areas
 # Each area is (west, south, east, north) in degrees.
