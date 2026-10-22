@@ -1,0 +1,29 @@
+# Virtual environment - recreate it with requirements.txt, never commit it
+.venv/
+
+# Downloaded and generated satellite data.
+# This is ~160 MB and grows. GitHub is the wrong place for it: there is a 100 MB
+# limit per file and repositories are meant to hold code, not datasets.
+# The dataset deliverable goes to Zenodo instead, and data/README.md will carry
+# the exact queries needed to regenerate everything from scratch.
+data/
+
+# Trained model weights - also too large, also go in the release/Zenodo
+weights/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Editors and OS
+.vscode/
+.idea/
+Thumbs.db
+desktop.ini
+
+# Keep the figures used in the README, even though they live under data/
+!docs/images/
