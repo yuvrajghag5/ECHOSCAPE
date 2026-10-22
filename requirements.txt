@@ -1,22 +1,22 @@
 # Current environment. Regenerate with:  .venv\Scripts\python.exe -m pip freeze
 #
 # Still to install, per phase:
-#   Phase 2b  scikit-learn          clustering for the data evaluation notebook
-#   Phase 3   scikit-learn          Random Forest label helper
+#   Phase 2b  scikit-learn          INSTALLED
+#   Phase 3   scikit-learn          INSTALLED
 #   Phase 5   torch (CUDA build)    must be Python 3.11, there is no 3.14 build
 #             segmentation-models-pytorch
 #
 # Pin everything from pip freeze before submission.
-
 affine==3.0.1
 attrs==26.1.0
 certifi==2026.10.19
-click==8.5.0
 click-plugins==1.1.1.2
+click==8.5.0
 cligj==0.7.2
 contourpy==1.3.3
 cycler==0.12.1
 fonttools==4.67.0
+joblib==1.6.0
 kiwisolver==1.5.1
 matplotlib==3.11.2
 numpy==2.4.6
@@ -26,4 +26,7 @@ pyparsing==3.3.3
 python-dateutil==3.0.0
 rasterio==1.4.4
 requests==2.34.2
+scikit-learn==1.9.1
+scipy==1.17.1
 six==1.17.0
+threadpoolctl==3.7.0
