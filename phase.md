@@ -130,19 +130,72 @@ year, the Amazon, the Sahel and inland Australia get about 30. Thin regions
 produce noisier composites, which is a second domain shift on top of the
 landscape one.
 
+### The candidate list — 3 regions per class, 18 total
+
+The sampling rule: **three regions per class, where that class is prominent,
+spread across climates and both hemispheres.** Every region still contains most
+of the other classes, so 18 regions gives every class both dedicated examples
+and many incidental ones.
+
+All 18 were checked before committing. The figure that matters is **passes per
+month on a single orbit track**, not the total over the box — a box overlaps
+several tracks but only one is ever used, so the raw total flatters.
+
+| Class | Region | lon, lat | Passes/month | Clear optical months |
+|---|---|---|---|---|
+| water | IJsselmeer, NL | 5.40, 52.70 | 7.4 | 12 |
+| water | Mekong delta, VN | 105.80, 10.00 | 5.1 | 11 |
+| water | Nile delta, EG | 31.00, 30.80 | 4.9 | 11 |
+| built-up | Randstad, NL | 4.60, 52.10 | 7.3 | 12 |
+| built-up | Cairo, EG | 31.25, 30.05 | 4.9 | 12 |
+| built-up | Delhi, IN | 77.10, 28.60 | 4.8 | 12 |
+| trees | Finland boreal | 25.70, 62.20 | 6.0 | 12 |
+| trees | Oregon, US | −122.50, 44.00 | 4.8 | 12 |
+| trees | Amazon, BR | −60.00, −3.10 | 2.6 | 11 |
+| cropland | Pampas, AR | −60.50, −34.00 | 4.8 | 12 |
+| cropland | Punjab, IN | 75.80, 30.90 | 2.6 | 12 |
+| cropland | Iowa, US | −93.60, 41.90 | 2.5 | 12 |
+| grass | NSW, AU | 147.40, −35.10 | 4.8 | 12 |
+| grass | Mongolia steppe | 106.00, 47.00 | 4.3 | 12 |
+| grass | Kenya savanna | 36.80, −1.30 | 2.5 | 12 |
+| bare | Atacama, CL | −69.50, −23.50 | 9.7 | 12 |
+| bare | Egypt desert | 29.00, 26.00 | 4.7 | 12 |
+| bare | Arabia, SA | 45.00, 24.00 | 4.7 | 12 |
+
+**Every one is usable.** The weakest are 2.5 passes a month, comparable to
+Germany in 2023, which still produces a usable composite. Optical coverage is
+good everywhere — even the Amazon has eleven months with at least one image
+under 40% cloud, which was the risk worth checking, since a region that cannot
+be labelled is useless regardless of how good its radar is.
+
+Five regions are in the southern hemisphere — Pampas, NSW, Atacama, Kenya,
+Amazon — which matters for the hemisphere trap described in `design.md`.
+
+**Picking rules applied.**
+
+- **Transition zones, not monocultures.** A tile that is 95% open ocean or
+  uniform desert teaches almost nothing. The boundaries are where the learning
+  is, so each region sits where its class meets others: deltas, city edges,
+  forest margins, desert fringes. Aim for the dominant class at roughly 40–60%.
+- **Class balance is handled in the loss, not only by sampling.** Choosing
+  water-heavy regions ensures enough water pixels exist; class-weighted loss
+  stops the model over-predicting it. Both are needed.
+
 **To do.**
 
-1. Pick 12–18 areas stratified by climate zone, making sure every class appears
-   in several climates. Check scene counts per candidate before committing.
-2. Reserve 2–3 whole areas, in climates not represented in training, as the
-   held-out test set.
-3. Decide the labelling budget per area. **Sparse labelling across many areas
-   beats dense labelling of few** — unlabelled pixels are simply excluded from
+1. Fine-tune each bounding box so the dominant class lands near 40–60%, and
+   check what the region actually looks like before downloading all twelve
+   months of it.
+2. Reserve **3 whole regions** as the held-out test set, from climates not used
+   in training.
+3. Decide the labelling budget per region. **Sparse labelling across many
+   regions beats dense labelling of few** — unlabelled pixels are excluded from
    the loss, so the same number of clicks buys far more geographic coverage.
-4. Download them. Roughly 31 MB per area-year; 18 areas is about 560 MB.
+   This is what makes 18 regions affordable at all.
+4. Download. Roughly 31 MB per region-year, so about **560 MB** for all 18.
 
-**Done when.** The area list exists with a justification per area, scene counts
-are checked, and the train/test split by region is fixed in writing.
+**Done when.** The boxes are fixed, the train/test split by region is written
+down, and the data is on disk.
 
 ---
 
