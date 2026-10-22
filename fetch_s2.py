@@ -22,6 +22,7 @@ ended up visible.
 
 import argparse
 import math
+import time
 
 import numpy as np
 import rasterio
@@ -89,17 +90,29 @@ def search_optical(bbox, year, month, max_cloud):
     return everything, usable
 
 
-def download_bands(item_id, bounds, width, height):
-    """Fetch the bands we need, cropped and resized by the server to our grid."""
+def download_bands(item_id, bounds, width, height, attempts=3):
+    """Fetch the bands we need, cropped and resized by the server to our grid.
+
+    Retries: single requests fail occasionally for no lasting reason, and over a
+    full run a silently skipped image means a thinner composite or a missing
+    month.
+    """
     west, south, east, north = bounds
     url = f"{DATA_API}/{west},{south},{east},{north}/{width}x{height}.tif"
-    reply = SESSION.get(
-        url,
-        params={"collection": "sentinel-2-l2a", "item": item_id,
-                "assets": BANDS + ["SCL"]},
-        timeout=900,
-    )
-    reply.raise_for_status()
+    for attempt in range(1, attempts + 1):
+        try:
+            reply = SESSION.get(
+                url,
+                params={"collection": "sentinel-2-l2a", "item": item_id,
+                        "assets": BANDS + ["SCL"]},
+                timeout=900,
+            )
+            reply.raise_for_status()
+            break
+        except Exception:
+            if attempt == attempts:
+                raise
+            time.sleep(2 * attempt)
     with MemoryFile(reply.content) as memfile, memfile.open() as src:
         stack = src.read().astype("float32")
 

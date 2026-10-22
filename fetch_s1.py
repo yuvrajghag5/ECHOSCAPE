@@ -22,7 +22,7 @@ No account, no API key, no login. Run:
 import argparse
 import math
 import sys
-from calendar import monthrange
+import time
 
 import numpy as np
 import rasterio
@@ -85,21 +85,32 @@ def choose_track(scenes, wanted_orbit):
     return best, tracks[best], tracks
 
 
-def download_window(item_id, bbox, width, height):
+def download_window(item_id, bbox, width, height, attempts=3):
     """Fetch one scene, cropped to our box and shrunk to our resolution.
 
     The server does the cropping and shrinking, so a whole scene that would be
     hundreds of megabytes arrives as a few megabytes.
+
+    Retries, because single requests fail occasionally for no lasting reason.
+    Over a full run that is 228 downloads, so "occasionally" happens several
+    times - and a month that fails is a month silently missing from the dataset.
     """
     west, south, east, north = bbox
     url = f"{DATA_API}/{west},{south},{east},{north}/{width}x{height}.tif"
-    reply = SESSION.get(
-        url,
-        params={"collection": config.COLLECTION, "item": item_id,
-                "assets": ["vv", "vh"]},
-        timeout=600,
-    )
-    reply.raise_for_status()
+    for attempt in range(1, attempts + 1):
+        try:
+            reply = SESSION.get(
+                url,
+                params={"collection": config.COLLECTION, "item": item_id,
+                        "assets": ["vv", "vh"]},
+                timeout=600,
+            )
+            reply.raise_for_status()
+            break
+        except Exception:
+            if attempt == attempts:
+                raise
+            time.sleep(2 * attempt)
     with MemoryFile(reply.content) as memfile, memfile.open() as src:
         stack = src.read().astype("float32")
         profile = src.profile
@@ -187,12 +198,12 @@ def main():
 def fetch_one_area(aoi_name, args, wanted_months):
     """Download every requested month for one area. Returns megabytes written."""
     area = config.AOIS[aoi_name]
-    bbox = area["bbox"]
+    bbox = config.bbox_for(aoi_name)
     width, height = pixel_grid(bbox, args.res)
     km_w = (bbox[2] - bbox[0]) * 111.32 * math.cos(math.radians((bbox[1] + bbox[3]) / 2))
     km_h = (bbox[3] - bbox[1]) * 111.32
 
-    print(f"\nArea      {aoi_name}  {area['note']}")
+    print(f"\nArea      {aoi_name}  [{area['class']}]  {area['note']}")
     print(f"Box       {bbox}")
     print(f"Ground    {km_w:.0f} x {km_h:.0f} km")
     print(f"Output    {width} x {height} pixels at {args.res} m")

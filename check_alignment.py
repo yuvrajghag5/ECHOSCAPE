@@ -106,16 +106,38 @@ def main():
 
     print("\n  Both images cover identical ground, pixel for pixel.")
 
-    # A second, independent check: water should be dark in radar AND dark in the
-    # near infrared. If the two agree about where the rivers are, they are aligned.
+    # A second, independent check: water is dark in radar AND dark in the near
+    # infrared, for completely unrelated physical reasons. If both sensors agree
+    # about where the water is, the grids really are aligned - matching metadata
+    # alone could still hide a mistake.
+    #
+    # This only works where there IS water. In a desert or savanna the "darkest
+    # 3%" is just slightly darker dirt, which has no reason to coincide, and a
+    # low score would mean nothing. So check for real water first.
     with np.errstate(all="ignore"):
         vv_db = 10 * np.log10(np.where(vv > 0, vv, np.nan))
+
     radar_water = vv_db < np.nanpercentile(vv_db, 3)
-    optical_water = nir < np.nanpercentile(nir[np.isfinite(nir)], 3)
-    both = radar_water & optical_water
-    agreement = both.sum() / max(radar_water.sum(), 1) * 100
-    print(f"  Darkest 3% of radar vs darkest 3% of infrared: {agreement:.0f}% overlap")
-    print("  (that is the rivers; a high number means they sit on top of each other)")
+    darkest_level = float(np.nanmedian(vv_db[radar_water]))
+    WATER_DB = -17.0           # below this is genuinely water-like, not just dark
+
+    if darkest_level > WATER_DB:
+        print(f"  No significant water here (darkest 3% averages "
+              f"{darkest_level:.1f} dB, water would be below {WATER_DB:.0f}).")
+        print("  Skipping the water cross-check - it only means something where")
+        print("  there is water. The grid match above is the alignment evidence.")
+        agreement = None
+        radar_water = np.zeros_like(radar_water)
+    else:
+        optical_water = nir < np.nanpercentile(nir[np.isfinite(nir)], 3)
+        both = radar_water & optical_water
+        agreement = both.sum() / max(radar_water.sum(), 1) * 100
+        print(f"  Darkest 3% of radar vs darkest 3% of infrared: "
+              f"{agreement:.0f}% overlap")
+        print("  (that is the water; both sensors finding it in the same place,")
+        print("   for unrelated reasons, is real evidence the grids line up)")
+        if agreement < 40:
+            print("  WARNING: that is low. Check the picture before labelling.")
 
     fig, axes = plt.subplots(1, 3, figsize=(16.5, 6.0), dpi=150)
     axes[0].imshow(np.dstack([stretch(red), stretch(green), stretch(blue)]))

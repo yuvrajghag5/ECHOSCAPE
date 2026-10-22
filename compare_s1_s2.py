@@ -25,7 +25,7 @@ DATA_API = "https://planetarycomputer.microsoft.com/api/data/v1/item/bbox"
 
 AOI = "mannheim"
 MONTH = "2021-06"
-BBOX = config.AOIS[AOI]["bbox"]
+BBOX = config.bbox_for(AOI)
 
 
 def count_optical_scenes(bbox, month):
