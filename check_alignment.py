@@ -37,24 +37,23 @@ def main():
     parser.add_argument("--month", default=None, help="e.g. 2021-09")
     args = parser.parse_args()
 
-    res = config.TARGET_RES_M
+    # Find files by looking on disk rather than building names from config.
+    # config can be edited after the data was downloaded, and a name built from
+    # the current setting would simply miss files that are already there.
     s2_dir = config.S2_MONTHLY / args.aoi
-    candidates = sorted(s2_dir.glob("*.tif"))
+    pattern = f"*_{args.month}_*.tif" if args.month else "*.tif"
+    candidates = sorted(s2_dir.glob(pattern))
     if not candidates:
-        raise SystemExit(f"No colour images in {s2_dir}. Run fetch_s2.py first.")
-
-    if args.month:
-        s2_path = s2_dir / f"{args.aoi}_{args.month}_{res}m.tif"
-        if not s2_path.exists():
-            raise SystemExit(f"{s2_path} not found.")
-    else:
-        s2_path = candidates[0]
+        raise SystemExit(f"No colour images matching {pattern} in {s2_dir}.\n"
+                         f"Run fetch_s2.py --aoi {args.aoi} first.")
+    s2_path = candidates[0]
 
     month = s2_path.stem.split("_")[1]
-    s1_path = config.S1_MONTHLY / args.aoi / f"{args.aoi}_{month}_{res}m.tif"
-    if not s1_path.exists():
+    s1_matches = sorted((config.S1_MONTHLY / args.aoi).glob(f"*_{month}_*.tif"))
+    if not s1_matches:
         raise SystemExit(f"No radar for {month}. Run fetch_s1.py --months "
                          f"{int(month[-2:])} first.")
+    s1_path = s1_matches[0]
 
     with rasterio.open(s1_path) as radar, rasterio.open(s2_path) as colour:
         checks = [

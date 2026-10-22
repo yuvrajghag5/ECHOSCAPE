@@ -227,6 +227,20 @@ After compositing September, 13.3% of pixels had only **one** cloud-free view
 across all eight images. For those, the "median" is just that single observation,
 so any thin cloud the mask missed passes straight through.
 
+**(f) Filenames were built from a setting that can change after the fact.**
+Every script constructed its filenames from `TARGET_RES_M` in `config.py`:
+`mannheim_2021-09_50m.tif`. That looks sensible until the setting is edited.
+
+Changing `TARGET_RES_M` from 50 to 100 immediately broke three tools, which went
+looking for `..._100m.tif` files that do not exist while a full year of
+`..._50m.tif` sat right next to them.
+
+Worse, and silently: `fetch_s2.py` reads its grid out of the radar file it finds
+on disk — correctly, 50 m — but then named its output `..._100m.tif`. A file
+labelled 100 m, actually written on the 50 m grid, with nothing downstream to
+catch the lie. Exactly the class of silent mismatch this project keeps trying to
+design out.
+
 ## 3. How it was solved
 
 **(a)** The grid is no longer calculated twice. `fetch_s2.py` opens the radar file
@@ -273,6 +287,23 @@ a comment explaining why. Those pixels stay empty and are excluded later.
 file, so Phase 3 can require a minimum number of clear views before trusting a
 pixel. Checked the residual contamination directly: only **0.8%** of pixels have
 suspiciously bright blue reflectance, so the composite is clean enough to label.
+
+**(f)** Stopped deriving filenames from configuration. The rule is now: **ask the
+disk what exists, do not predict what it should be called.**
+
+- `check_alignment.py` and `compare_s1_s2.py` search for `*_<month>_*.tif`
+  instead of constructing an exact name.
+- `fetch_s2.py` takes its resolution tag from the radar file it actually matched,
+  so the output name always describes the grid the data is really on, whatever
+  `config.py` currently says.
+
+Verified by leaving `TARGET_RES_M` at 100 while the data on disk was 50 m: every
+tool found the right files and reported `50m` correctly.
+
+**The general lesson**, worth stating in the report: configuration describes
+*intent for the next run*. It is not a reliable description of data already
+written. Anything already on disk should be discovered, not predicted. A filename
+built from a mutable setting is a guess dressed up as a fact.
 
 ---
 

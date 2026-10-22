@@ -60,9 +60,13 @@ def stretch(values, low=2, high=98):
 
 
 def main():
-    radar_path = config.S1_MONTHLY / AOI / f"{AOI}_{MONTH}_{config.TARGET_RES_M}m.tif"
-    if not radar_path.exists():
-        raise SystemExit(f"Missing {radar_path}. Run fetch_s1.py --months 6 first.")
+    # Look on disk rather than building the name from config, which may have been
+    # changed since the data was downloaded.
+    matches = sorted((config.S1_MONTHLY / AOI).glob(f"*_{MONTH}_*.tif"))
+    if not matches:
+        raise SystemExit(f"No radar for {MONTH} in {config.S1_MONTHLY / AOI}. "
+                         f"Run fetch_s1.py --months 6 first.")
+    radar_path = matches[0]
 
     with rasterio.open(radar_path) as src:
         vv = src.read(1).astype("float64")

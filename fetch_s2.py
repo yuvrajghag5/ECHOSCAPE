@@ -61,8 +61,13 @@ def radar_grid(aoi, year):
             f"Run:  .venv\\Scripts\\python.exe fetch_s1.py --aoi {aoi}\n"
             f"The colour images must match the radar grid, so the radar comes first."
         )
+    # Take the resolution tag from the radar filename we are actually matching,
+    # NOT from config. If config has been changed since the radar was downloaded,
+    # trusting it would label this file 100m while putting it on the 50m grid -
+    # a mismatch nothing would catch later.
+    resolution_tag = files[0].stem.rsplit("_", 1)[-1]
     with rasterio.open(files[0]) as src:
-        return src.width, src.height, src.profile, tuple(src.bounds)
+        return src.width, src.height, src.profile, tuple(src.bounds), resolution_tag
 
 
 def search_optical(bbox, year, month, max_cloud):
@@ -178,9 +183,10 @@ def main():
 
 def fetch_one_area(aoi_name, args, first, last):
     """Download every requested month for one area. Returns megabytes written."""
-    width, height, profile, bounds = radar_grid(aoi_name, args.year)
+    width, height, profile, bounds, resolution_tag = radar_grid(aoi_name, args.year)
     print(f"\nArea      {aoi_name}")
-    print(f"Grid      {width} x {height} pixels, taken from the radar files")
+    print(f"Grid      {width} x {height} pixels at {resolution_tag}, "
+          f"taken from the radar files")
     print(f"Bounds    {bounds}")
     print(f"Year      {args.year}   cloud limit {args.max_cloud:.0f}%\n")
 
@@ -203,7 +209,7 @@ def fetch_one_area(aoi_name, args, first, last):
     total_mb = 0.0
     for month in range(first, last + 1):
         label = f"{args.year}-{month:02d}"
-        out_path = out_dir / f"{aoi_name}_{label}_{config.TARGET_RES_M}m.tif"
+        out_path = out_dir / f"{aoi_name}_{label}_{resolution_tag}.tif"
 
         if out_path.exists():
             print(f"   {label}  already done, skipping")
