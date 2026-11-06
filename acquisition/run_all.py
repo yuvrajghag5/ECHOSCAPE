@@ -13,16 +13,25 @@ you get usable data for 18 regions instead of nothing.
 
 Anything already downloaded is skipped, so stopping and restarting is safe.
 
-    .venv\\Scripts\\python.exe run_all.py                  # everything, ~600 MB
-    .venv\\Scripts\\python.exe run_all.py --dry-run        # just check what exists
-    .venv\\Scripts\\python.exe run_all.py --aoi mannheim   # one region
-    .venv\\Scripts\\python.exe run_all.py --skip-png       # no pictures
+    .venv\\Scripts\\python.exe acquisition\\run_all.py                  # everything, ~600 MB
+    .venv\\Scripts\\python.exe acquisition\\run_all.py --dry-run        # just check what exists
+    .venv\\Scripts\\python.exe acquisition\\run_all.py --aoi mannheim   # one region
+    .venv\\Scripts\\python.exe acquisition\\run_all.py --skip-png       # no pictures
 """
 
 import argparse
 import subprocess
 import sys
 import time
+
+import rasterio
+
+from pathlib import Path
+
+# Every script runs from its own folder, where Python cannot see config.py
+# or the other packages. Putting the project root first fixes that the same
+# way for every script, however it is launched.
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import config
 
@@ -50,29 +59,53 @@ def months_present(folder, name, year):
     """Which months actually ended up on disk for this region."""
     if not folder.exists():
         return set()
-    return {p.stem.split("_")[1] for p in folder.glob(f"{name}_{year}-*.tif")}
+    return {config.month_of(p) for p in folder.glob(f"{name}_{year}-*.tif")}
+
+
+def radar_coverage(folder, name, year):
+    """The worst month's share of the box that the radar actually saw.
+
+    Read from band 3 (passes per pixel) of the files on disk. A file can exist
+    and cover almost nothing: before 5 Nov paris had all 12 months on disk at
+    2% coverage each, and this table still said 12/12.
+    """
+    worst = None
+    for path in folder.glob(f"{name}_{year}-*.tif"):
+        with rasterio.open(path) as src:
+            share = float((src.read(3) > 0).mean())
+        worst = share if worst is None else min(worst, share)
+    return worst
 
 
 def completeness_report(areas, year):
-    """Say exactly what is missing, per region.
+    """Say exactly what is missing, per region - months AND ground.
 
     Downloads fail occasionally. A failed month prints one line and scrolls away,
     and the region still finishes - so without this check a gap is invisible
-    until something much later behaves oddly.
+    until something much later behaves oddly. Counting files is not enough
+    either: a month can be on disk and cover a sliver of the box, so the
+    radar's real coverage is read from the files too.
     """
     expected = {f"{year}-{m:02d}" for m in range(1, 13)}
-    gaps = []
+    gaps, thin = [], []
     print()
-    print(f"{'region':14}{'radar':>8}{'colour':>9}   missing radar months")
-    print("-" * 70)
+    print(f"{'region':14}{'radar':>8}{'colour':>9}{'covered':>10}   problems")
+    print("-" * 74)
     for name in areas:
         radar = months_present(config.S1_MONTHLY / name, name, year)
         colour = months_present(config.S2_MONTHLY / name, name, year)
+        worst = radar_coverage(config.S1_MONTHLY / name, name, year)
         missing = sorted(expected - radar)
+        notes = []
         if missing:
             gaps.append((name, missing))
-        note = ", ".join(m[-2:] for m in missing) if missing else ""
-        print(f"{name:14}{len(radar):>5}/12{len(colour):>6}/12   {note}")
+            notes.append("missing months " + ", ".join(m[-2:] for m in missing))
+        if worst is not None and worst < config.MIN_TRACK_COVER:
+            thin.append((name, worst))
+            notes.append("RADAR COVERS TOO LITTLE OF THE BOX")
+        covered = "-" if worst is None else f"{100 * worst:.1f}%"
+        print(f"{name:14}{len(radar):>5}/12{len(colour):>6}/12{covered:>10}   "
+              f"{'; '.join(notes)}")
 
     if gaps:
         print()
@@ -81,9 +114,17 @@ def completeness_report(areas, year):
         print("  Re-run to fill them in (finished months are skipped):")
         for name, missing in gaps:
             print(f"     run_all.py --aoi {name}")
-    else:
-        print("\n  All regions complete.")
-    return gaps
+    if thin:
+        print()
+        print(f"  Radar covering under {100 * config.MIN_TRACK_COVER:.0f}% of the box "
+              "(worst month shown above).")
+        print("  Usually a track that only clips the box. If its months came from an")
+        print("  older run, delete them and re-run - fetch_s1 now picks by coverage:")
+        for name, _ in thin:
+            print(f"     delete data\\s1_monthly\\{name}  then  run_all.py --aoi {name}")
+    if not gaps and not thin:
+        print("\n  All regions complete, and every month covers the box.")
+    return gaps + [(name, ["coverage"]) for name, _ in thin]
 
 
 def main():
@@ -127,18 +168,18 @@ def main():
         if args.dry_run:
             common.append("--dry-run")
 
-        ok = run("fetch_s1.py", common)
+        ok = run("acquisition/fetch_s1.py", common)
         if not ok:
             print(f"\n  !! radar failed for {name}, moving on")
             failed.append(name)
             continue
 
         if not args.skip_optical:
-            if not run("fetch_s2.py", common):
+            if not run("acquisition/fetch_s2.py", common):
                 print(f"\n  !! colour failed for {name} - radar is still fine")
 
         if not (args.dry_run or args.skip_png):
-            run("to_png.py", ["--aoi", name])
+            run("visualisation/to_png.py", ["--aoi", name])
 
         done.append(name)
 
@@ -156,7 +197,7 @@ def main():
         completeness_report(areas, args.year)
         print()
         print("  next:")
-        print(f"     python check_alignment.py --aoi "
+        print(f"     python acquisition\\check_alignment.py --aoi "
               f"{done[0] if done else config.DEFAULT_AOI}")
         print(f"     look at  data\\png\\<region>\\")
 

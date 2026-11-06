@@ -5,7 +5,7 @@ Sentinel-2 is a camera: it looks like a photograph, but clouds block it.
 Sentinel-1 is radar: it works through cloud and at night, but you cannot read
 it by eye.
 
-    .venv\\Scripts\\python.exe compare_s1_s2.py
+    .venv\\Scripts\\python.exe visualisation\\compare_s1_s2.py
 """
 
 import io
@@ -17,6 +17,14 @@ import numpy as np
 import rasterio
 import requests
 from rasterio.io import MemoryFile
+
+import sys
+from pathlib import Path
+
+# Every script runs from its own folder, where Python cannot see config.py
+# or the other packages. Putting the project root first fixes that the same
+# way for every script, however it is launched.
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import config
 
@@ -65,7 +73,7 @@ def main():
     matches = sorted((config.S1_MONTHLY / AOI).glob(f"*_{MONTH}_*.tif"))
     if not matches:
         raise SystemExit(f"No radar for {MONTH} in {config.S1_MONTHLY / AOI}. "
-                         f"Run fetch_s1.py --months 6 first.")
+                         f"Run acquisition/fetch_s1.py --months 6 first.")
     radar_path = matches[0]
 
     with rasterio.open(radar_path) as src:

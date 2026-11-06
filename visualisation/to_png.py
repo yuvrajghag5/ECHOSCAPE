@@ -9,8 +9,8 @@ just not a picture yet.
 
 This script converts them into real pictures.
 
-    .venv\\Scripts\\python.exe to_png.py
-    .venv\\Scripts\\python.exe to_png.py --aoi mannheim
+    .venv\\Scripts\\python.exe visualisation\\to_png.py
+    .venv\\Scripts\\python.exe visualisation\\to_png.py --aoi mannheim
 
 Output lands in data/png/ and opens in any image viewer.
 """
@@ -20,6 +20,14 @@ import argparse
 import numpy as np
 import rasterio
 from PIL import Image
+
+import sys
+from pathlib import Path
+
+# Every script runs from its own folder, where Python cannot see config.py
+# or the other packages. Putting the project root first fixes that the same
+# way for every script, however it is launched.
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import config
 
@@ -126,7 +134,7 @@ def main():
                   f"(true colour) -> {out_dir}")
 
     if made == 0:
-        raise SystemExit("Nothing found. Run fetch_s1.py first.")
+        raise SystemExit("Nothing found. Run acquisition/fetch_s1.py first.")
     print(f"\nMade {made} pictures in {out_root}")
     print("Double-click any of them. For the real thing with coordinates,")
     print("open the .tif files in QGIS instead (free, qgis.org).")

@@ -1,0 +1,482 @@
+{
+  "min_confidence": 0.35,
+  "crop_rule": true,
+  "crop_min_peak": 0.4,
+  "regions": [
+    {
+      "aoi": "ijsselmeer",
+      "radar": "ijsselmeer_2021-01_50m.tif",
+      "crop_to_grass": 291,
+      "crop_to_bare": 0,
+      "coverage": 0.9575888888888889,
+      "median_views": 27.0,
+      "classes": {
+        "water": 0.8618111111111111,
+        "built-up": 0.026969444444444445,
+        "trees": 0.0053861111111111115,
+        "cropland": 0.061297222222222225,
+        "grass / low vegetation": 0.001761111111111111,
+        "bare / sparse": 0.0003638888888888889
+      }
+    },
+    {
+      "aoi": "mekong",
+      "radar": "mekong_2021-01_50m.tif",
+      "crop_to_grass": 383,
+      "crop_to_bare": 4,
+      "coverage": 0.8319694444444444,
+      "median_views": 7.0,
+      "classes": {
+        "water": 0.0767,
+        "built-up": 0.35379444444444447,
+        "trees": 0.2547527777777778,
+        "cropland": 0.14506666666666668,
+        "grass / low vegetation": 0.0014194444444444445,
+        "bare / sparse": 0.00023611111111111112
+      }
+    },
+    {
+      "aoi": "nile_delta",
+      "radar": "nile_delta_2021-01_50m.tif",
+      "crop_to_grass": 2908,
+      "crop_to_bare": 78,
+      "coverage": 0.9781027777777778,
+      "median_views": 86.0,
+      "classes": {
+        "water": 0.0037694444444444446,
+        "built-up": 0.18408611111111112,
+        "trees": 0.0005777777777777778,
+        "cropland": 0.7804138888888889,
+        "grass / low vegetation": 0.008077777777777777,
+        "bare / sparse": 0.0011777777777777778
+      }
+    },
+    {
+      "aoi": "randstad",
+      "radar": "randstad_2021-01_50m.tif",
+      "crop_to_grass": 2966,
+      "crop_to_bare": 3,
+      "coverage": 0.7008888888888889,
+      "median_views": 11.0,
+      "classes": {
+        "water": 0.058097222222222224,
+        "built-up": 0.28150277777777777,
+        "trees": 0.04986388888888889,
+        "cropland": 0.2896972222222222,
+        "grass / low vegetation": 0.02061388888888889,
+        "bare / sparse": 0.0011138888888888889
+      }
+    },
+    {
+      "aoi": "cairo",
+      "radar": "cairo_2021-01_50m.tif",
+      "crop_to_grass": 1625,
+      "crop_to_bare": 50,
+      "coverage": 0.8979333333333334,
+      "median_views": 49.0,
+      "classes": {
+        "water": 0.0272,
+        "built-up": 0.44380833333333336,
+        "trees": 0.00034722222222222224,
+        "cropland": 0.14248611111111112,
+        "grass / low vegetation": 0.004741666666666667,
+        "bare / sparse": 0.27935
+      }
+    },
+    {
+      "aoi": "delhi",
+      "radar": "delhi_2021-01_50m.tif",
+      "crop_to_grass": 2232,
+      "crop_to_bare": 3,
+      "coverage": 0.8050777777777778,
+      "median_views": 41.0,
+      "classes": {
+        "water": 0.01088611111111111,
+        "built-up": 0.6232222222222222,
+        "trees": 0.06690277777777778,
+        "cropland": 0.08405,
+        "grass / low vegetation": 0.006763888888888889,
+        "bare / sparse": 0.013252777777777778
+      }
+    },
+    {
+      "aoi": "finland",
+      "radar": "finland_2021-01_50m.tif",
+      "crop_to_grass": 0,
+      "crop_to_bare": 0,
+      "coverage": 0.71195,
+      "median_views": 35.0,
+      "classes": {
+        "water": 0.16056944444444443,
+        "built-up": 0.041055555555555553,
+        "trees": 0.5102861111111111,
+        "cropland": 3.888888888888889e-05
+      }
+    },
+    {
+      "aoi": "oregon",
+      "radar": "oregon_2021-01_50m.tif",
+      "crop_to_grass": 200,
+      "crop_to_bare": 0,
+      "coverage": 0.8745583333333333,
+      "median_views": 25.0,
+      "classes": {
+        "water": 0.004227777777777777,
+        "built-up": 0.0017194444444444444,
+        "trees": 0.7573138888888888,
+        "cropland": 0.0006722222222222223,
+        "grass / low vegetation": 0.11038333333333333,
+        "bare / sparse": 0.00024166666666666667
+      }
+    },
+    {
+      "aoi": "amazon",
+      "radar": "amazon_2021-01_50m.tif",
+      "crop_to_grass": 5,
+      "crop_to_bare": 0,
+      "coverage": 0.9361083333333333,
+      "median_views": 10.0,
+      "classes": {
+        "water": 0.2693277777777778,
+        "built-up": 0.26821666666666666,
+        "trees": 0.3920888888888889,
+        "cropland": 2.777777777777778e-06,
+        "grass / low vegetation": 0.0025583333333333335,
+        "bare / sparse": 0.003913888888888889
+      }
+    },
+    {
+      "aoi": "pampas",
+      "radar": "pampas_2021-01_50m.tif",
+      "crop_to_grass": 1141,
+      "crop_to_bare": 16,
+      "coverage": 0.941775,
+      "median_views": 36.0,
+      "classes": {
+        "water": 8.055555555555556e-05,
+        "built-up": 0.04068055555555555,
+        "trees": 0.010025,
+        "cropland": 0.8345111111111111,
+        "grass / low vegetation": 0.05633333333333333,
+        "bare / sparse": 0.00014444444444444444
+      }
+    },
+    {
+      "aoi": "punjab",
+      "radar": "punjab_2021-01_50m.tif",
+      "crop_to_grass": 1740,
+      "crop_to_bare": 22,
+      "coverage": 0.8772194444444444,
+      "median_views": 38.0,
+      "classes": {
+        "water": 0.01253888888888889,
+        "built-up": 0.29312777777777776,
+        "trees": 0.007816666666666666,
+        "cropland": 0.5572638888888889,
+        "grass / low vegetation": 0.004833333333333334,
+        "bare / sparse": 0.001638888888888889
+      }
+    },
+    {
+      "aoi": "iowa",
+      "radar": "iowa_2021-01_50m.tif",
+      "crop_to_grass": 2019,
+      "crop_to_bare": 3,
+      "coverage": 0.8351888888888889,
+      "median_views": 54.0,
+      "classes": {
+        "water": 0.008527777777777778,
+        "built-up": 0.06338611111111112,
+        "trees": 0.06572777777777777,
+        "cropland": 0.6841055555555555,
+        "grass / low vegetation": 0.013363888888888889,
+        "bare / sparse": 7.777777777777778e-05
+      }
+    },
+    {
+      "aoi": "nsw",
+      "radar": "nsw_2021-01_50m.tif",
+      "crop_to_grass": 1479,
+      "crop_to_bare": 14,
+      "coverage": 0.7045611111111111,
+      "median_views": 34.0,
+      "classes": {
+        "water": 0.007875,
+        "built-up": 0.07717777777777778,
+        "trees": 0.08089444444444445,
+        "cropland": 0.26466666666666666,
+        "grass / low vegetation": 0.27329444444444445,
+        "bare / sparse": 0.0006527777777777777
+      }
+    },
+    {
+      "aoi": "mongolia",
+      "radar": "mongolia_2021-01_50m.tif",
+      "crop_to_grass": 161653,
+      "crop_to_bare": 1819,
+      "coverage": 0.48243888888888886,
+      "median_views": 51.0,
+      "classes": {
+        "water": 4.4444444444444447e-05,
+        "built-up": 0.00020833333333333335,
+        "cropland": 0.004036111111111111,
+        "grass / low vegetation": 0.45100833333333334,
+        "bare / sparse": 0.027141666666666668
+      }
+    },
+    {
+      "aoi": "kenya",
+      "radar": "kenya_2021-01_50m.tif",
+      "crop_to_grass": 2190,
+      "crop_to_bare": 55,
+      "coverage": 0.7556111111111111,
+      "median_views": 8.0,
+      "classes": {
+        "water": 0.0017638888888888888,
+        "built-up": 0.5052027777777778,
+        "trees": 0.11478611111111112,
+        "cropland": 0.03376388888888889,
+        "grass / low vegetation": 0.0970638888888889,
+        "bare / sparse": 0.0030305555555555554
+      }
+    },
+    {
+      "aoi": "atacama",
+      "radar": "atacama_2021-01_50m.tif",
+      "crop_to_grass": 0,
+      "crop_to_bare": 78,
+      "coverage": 0.9998694444444445,
+      "median_views": 49.0,
+      "classes": {
+        "water": 3.888888888888889e-05,
+        "bare / sparse": 0.9998305555555556
+      }
+    },
+    {
+      "aoi": "egypt_desert",
+      "radar": "egypt_desert_2021-01_50m.tif",
+      "crop_to_grass": 0,
+      "crop_to_bare": 0,
+      "coverage": 1.0,
+      "median_views": 65.0,
+      "classes": {
+        "bare / sparse": 1.0
+      }
+    },
+    {
+      "aoi": "arabia",
+      "radar": "arabia_2021-01_50m.tif",
+      "crop_to_grass": 79,
+      "crop_to_bare": 34,
+      "coverage": 0.9968055555555555,
+      "median_views": 64.0,
+      "classes": {
+        "built-up": 0.002577777777777778,
+        "cropland": 0.0004888888888888889,
+        "grass / low vegetation": 0.00022777777777777778,
+        "bare / sparse": 0.9935111111111111
+      }
+    },
+    {
+      "aoi": "mannheim",
+      "radar": "mannheim_2021-01_50m.tif",
+      "crop_to_grass": 4036,
+      "crop_to_bare": 40,
+      "coverage": 0.8942083333333334,
+      "median_views": 11.0,
+      "classes": {
+        "water": 0.037380555555555556,
+        "built-up": 0.30011666666666664,
+        "trees": 0.309275,
+        "cropland": 0.22345833333333334,
+        "grass / low vegetation": 0.0234,
+        "bare / sparse": 0.0005777777777777778
+      }
+    },
+    {
+      "aoi": "chesapeake",
+      "radar": "chesapeake_2021-01_50m.tif",
+      "crop_to_grass": 8,
+      "crop_to_bare": 0,
+      "coverage": 0.9500638888888889,
+      "median_views": 29.0,
+      "classes": {
+        "water": 0.8248055555555556,
+        "built-up": 0.0060416666666666665,
+        "trees": 0.10288888888888889,
+        "cropland": 0.011275,
+        "grass / low vegetation": 0.004636111111111111,
+        "bare / sparse": 0.0004166666666666667
+      }
+    },
+    {
+      "aoi": "paris",
+      "radar": "paris_2021-01_50m.tif",
+      "crop_to_grass": 205,
+      "crop_to_bare": 2,
+      "coverage": 0.9377777777777778,
+      "median_views": 25.0,
+      "classes": {
+        "water": 0.02056388888888889,
+        "built-up": 0.7716527777777777,
+        "trees": 0.10802222222222223,
+        "cropland": 0.025316666666666668,
+        "grass / low vegetation": 0.010905555555555555,
+        "bare / sparse": 0.0013166666666666667
+      }
+    },
+    {
+      "aoi": "black_forest",
+      "radar": "black_forest_2021-01_50m.tif",
+      "crop_to_grass": 38,
+      "crop_to_bare": 0,
+      "coverage": 0.9118888888888889,
+      "median_views": 11.0,
+      "classes": {
+        "water": 0.0002777777777777778,
+        "built-up": 0.055358333333333336,
+        "trees": 0.7774027777777778,
+        "cropland": 0.03214444444444445,
+        "grass / low vegetation": 0.04668611111111111,
+        "bare / sparse": 1.9444444444444445e-05
+      }
+    },
+    {
+      "aoi": "beauce",
+      "radar": "beauce_2021-01_50m.tif",
+      "crop_to_grass": 14024,
+      "crop_to_bare": 3,
+      "coverage": 0.9793027777777777,
+      "median_views": 29.0,
+      "classes": {
+        "water": 7.777777777777778e-05,
+        "built-up": 0.02443888888888889,
+        "trees": 0.040883333333333334,
+        "cropland": 0.870075,
+        "grass / low vegetation": 0.042194444444444444,
+        "bare / sparse": 0.0016333333333333334
+      }
+    },
+    {
+      "aoi": "serengeti",
+      "radar": "serengeti_2021-01_50m.tif",
+      "crop_to_grass": 247,
+      "crop_to_bare": 0,
+      "coverage": 0.6364305555555556,
+      "median_views": 38.0,
+      "classes": {
+        "water": 0.00075,
+        "built-up": 5.277777777777778e-05,
+        "trees": 0.0005916666666666667,
+        "cropland": 0.020569444444444446,
+        "grass / low vegetation": 0.6144527777777777,
+        "bare / sparse": 1.388888888888889e-05
+      }
+    },
+    {
+      "aoi": "namib",
+      "radar": "namib_2021-01_50m.tif",
+      "crop_to_grass": 232,
+      "crop_to_bare": 4161,
+      "coverage": 0.9982916666666667,
+      "median_views": 105.0,
+      "classes": {
+        "grass / low vegetation": 0.0006444444444444444,
+        "bare / sparse": 0.9976472222222222
+      }
+    },
+    {
+      "aoi": "lake_geneva",
+      "radar": "lake_geneva_2021-01_50m.tif",
+      "crop_to_grass": 120,
+      "crop_to_bare": 0,
+      "coverage": 0.9038305555555556,
+      "median_views": 41.0,
+      "classes": {
+        "water": 0.3936472222222222,
+        "built-up": 0.15453055555555556,
+        "trees": 0.20478333333333334,
+        "cropland": 0.12570833333333334,
+        "grass / low vegetation": 0.024872222222222223,
+        "bare / sparse": 0.0002888888888888889
+      }
+    },
+    {
+      "aoi": "tokyo",
+      "radar": "tokyo_2021-01_50m.tif",
+      "crop_to_grass": 24,
+      "crop_to_bare": 4,
+      "coverage": 0.9552222222222222,
+      "median_views": 27.0,
+      "classes": {
+        "water": 0.09865555555555555,
+        "built-up": 0.8431972222222223,
+        "trees": 0.009713888888888888,
+        "cropland": 0.0002916666666666667,
+        "grass / low vegetation": 0.002947222222222222,
+        "bare / sparse": 0.0004166666666666667
+      }
+    },
+    {
+      "aoi": "congo",
+      "radar": "congo_2021-01_50m.tif",
+      "crop_to_grass": 0,
+      "crop_to_bare": 0,
+      "coverage": 0.9811666666666666,
+      "median_views": 25.0,
+      "classes": {
+        "water": 0.02213611111111111,
+        "built-up": 0.0032555555555555554,
+        "trees": 0.9525305555555555,
+        "grass / low vegetation": 0.0032444444444444443
+      }
+    },
+    {
+      "aoi": "kansas",
+      "radar": "kansas_2021-01_50m.tif",
+      "crop_to_grass": 14229,
+      "crop_to_bare": 7,
+      "coverage": 0.6324194444444444,
+      "median_views": 26.0,
+      "classes": {
+        "water": 0.02376111111111111,
+        "built-up": 0.01975,
+        "trees": 0.026594444444444445,
+        "cropland": 0.48720555555555556,
+        "grass / low vegetation": 0.07484722222222222,
+        "bare / sparse": 0.0002611111111111111
+      }
+    },
+    {
+      "aoi": "ireland",
+      "radar": "ireland_2021-01_50m.tif",
+      "crop_to_grass": 19,
+      "crop_to_bare": 1,
+      "coverage": 0.5963111111111111,
+      "median_views": 10.0,
+      "classes": {
+        "water": 0.014583333333333334,
+        "built-up": 0.04374722222222222,
+        "trees": 0.22581666666666667,
+        "cropland": 0.17471944444444445,
+        "grass / low vegetation": 0.137275,
+        "bare / sparse": 0.00016944444444444445
+      }
+    },
+    {
+      "aoi": "death_valley",
+      "radar": "death_valley_2021-01_50m.tif",
+      "crop_to_grass": 21,
+      "crop_to_bare": 57,
+      "coverage": 0.987425,
+      "median_views": 49.0,
+      "classes": {
+        "water": 0.00011944444444444444,
+        "built-up": 0.0012194444444444444,
+        "trees": 8.333333333333333e-05,
+        "grass / low vegetation": 0.007355555555555555,
+        "bare / sparse": 0.9786472222222222
+      }
+    }
+  ]
+}

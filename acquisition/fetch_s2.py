@@ -16,8 +16,8 @@ and only one was clear. This script therefore combines every image in a month,
 keeping only the cloud-free pixels from each, and reports how much of the area
 ended up visible.
 
-    .venv\\Scripts\\python.exe fetch_s2.py --dry-run
-    .venv\\Scripts\\python.exe fetch_s2.py
+    .venv\\Scripts\\python.exe acquisition\\fetch_s2.py --dry-run
+    .venv\\Scripts\\python.exe acquisition\\fetch_s2.py
 """
 
 import argparse
@@ -28,6 +28,14 @@ import numpy as np
 import rasterio
 import requests
 from rasterio.io import MemoryFile
+
+import sys
+from pathlib import Path
+
+# Every script runs from its own folder, where Python cannot see config.py
+# or the other packages. Putting the project root first fixes that the same
+# way for every script, however it is launched.
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import config
 
@@ -59,7 +67,7 @@ def radar_grid(aoi, year):
     if not files:
         raise SystemExit(
             f"No radar files in {folder}.\n"
-            f"Run:  .venv\\Scripts\\python.exe fetch_s1.py --aoi {aoi}\n"
+            f"Run:  .venv\\Scripts\\python.exe acquisition\\fetch_s1.py --aoi {aoi}\n"
             f"The colour images must match the radar grid, so the radar comes first."
         )
     # Take the resolution tag from the radar filename we are actually matching,

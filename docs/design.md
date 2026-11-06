@@ -10,16 +10,16 @@ This is a **Deep Learning** course. The model is the subject: its architecture,
 its training procedure, and the experiments that justify both.
 
 That shapes where effort goes. The data pipeline in Phases 1–4 is necessary — and
-the professor explicitly required self-made labels — but it is groundwork. The
-submission stands or falls on Phases 5 and 6: a model trained properly, compared
-against a sensible baseline, with honest per-class numbers and a clear account of
-where it fails.
+the labels can come from anywhere: the professor confirmed on 3 November that
+an existing labelled dataset is acceptable and that self-labelling is not
+graded — but it is groundwork. The
+submission stands or falls on Phases 5 and 6: a model trained properly, with
+honest per-class numbers and a clear account of where it fails.
 
-Three experiments are planned rather than a single trained model: a non-deep
-baseline to show what spatial context is worth, a pretrained-versus-scratch
-comparison to test whether ImageNet features transfer to radar, and a
-single-month-versus-three-month input test aimed at the one weakness already
-measured. See `phase.md`.
+**Three architectures are trained from scratch and compared**, rather than a
+single model, and the best is taken forward to the prototype. (Until 5 November
+the plan was a non-deep baseline, a pretrained-versus-scratch comparison and a
+multi-month input test; see `phase.md`.)
 
 ## The problem
 
@@ -73,10 +73,11 @@ about where the training labels came from.
 So:
 
 ```
-Sentinel-2 (colour)  ->  human labels regions  ->  land-cover masks
-                                                        |
-Sentinel-1 (radar)  ------------------------------------+--> model learns
-                                                        |
+Dynamic World (optical, 10 m) -> labels, voted down to 50 m --+
+  (a machine teacher, built from Sentinel-2)                  |
+                                                              +--> model learns
+Sentinel-1 (radar)  ------------------------------------------+
+
                         at prediction time: radar only, no optical anywhere
 ```
 
@@ -87,6 +88,17 @@ and November it would not exist.
 
 **This is the project's argument in one line: train where optical works, deploy
 where it does not.**
+
+The teacher was originally a human labelling by hand. Since 3 November it is a
+machine — Google Dynamic World — and the argument holds unchanged, because what
+matters is that optical makes the labels and radar alone does the predicting.
+
+From 3 to 5 November the hand labels were kept as an independent test set.
+On 5 November they were archived and Dynamic World became the only labels, for
+training, validation and test alike. **The consequence, stated plainly: every
+score now measures agreement with Dynamic World, not with ground truth** — and
+Dynamic World is itself 73–84% accurate in published comparisons. A model can
+be right where Dynamic World is wrong and be marked down for it.
 
 ## The deployment gap — the project's biggest validity problem
 
@@ -206,6 +218,42 @@ genuinely human-made masks for a few hundred clicks. Slower per area than dottin
 but it satisfies "label it yourself" literally, with no argument to have later
 about whether a Random Forest did the labelling.
 
+*Since 3 November these masks are no longer the training data. They are the
+test set — see the next decision.*
+
+### Train on machine labels, test on hand labels
+
+> **Superseded on 5 November 2026.** The hand labels were then archived and
+> the Random Forest baseline dropped; every label is Dynamic World, and
+> validation and test use new regions, one dominated by each class. Kept
+> below as the record of how the project got there.
+
+
+Decided 3 November, once the professor confirmed external labels are allowed.
+
+Hand labelling produced 14 regions with 2.8 M labelled pixels in about two
+weeks, and it exposed three limits no amount of extra clicking would fix in the
+time left: grass had 2,037 pixels against bare's 779,241 and could not be
+learned; 41% of every tile was unlabelled; and the U-Net overfitted after about
+six epochs because 14 regions are only ~233 distinct pieces of ground.
+
+An external product fixes the first two at once and makes the third cheap to
+address. But training *and* testing on it would only measure how well radar
+imitates another model — one that is itself 73–84% accurate. So the hand masks
+move to the test side, where they become the reference that matters.
+
+Two rules make this sound:
+
+- **A region is train or test, never both**, whatever labels it carries.
+- **The external labels are downsampled 10 m → 50 m by majority vote** onto the
+  radar grid. They are a label source, not model input, so the "no
+  high-resolution data" rule is untouched — the same argument that always
+  justified labelling on 10 m Sentinel-2.
+
+It also yields an experiment worth reporting: the same U-Net trained on sparse,
+careful hand labels against dense, noisier machine labels, scored on the same
+human test set. *Does quantity of labels beat quality?*
+
 ### 50 m pixels — not 10 m, and not 100 m
 
 Required by the professor to be coarse, but 50 m was chosen by measurement, not
@@ -312,11 +360,15 @@ two passes from the same month.
 | Cropland vs grass is unreliable | Their radar signatures overlap 71% at 10 m, 61% at 50 m — physically, not a modelling flaw | Report per-class scores honestly; consider multi-month input |
 | Winter was never supervised | The optical teacher cannot see in October–November | Document it; it is also the project's whole point |
 | Water fails in high wind | Wind roughens the surface so it stops reflecting away | Note it as a known failure mode |
-| Model trained on German landscapes | Only three areas, all Rhine valley | Do not claim it generalises worldwide |
+| Labels are machine-made | Dynamic World is 73–84% accurate; the model learns its mistakes and is scored against them | Every score is agreement with Dynamic World, said so with each result; the cropland rule removes one measured systematic error (steppe called cropland) |
+| (superseded) Training labels are machine-made | An external product is 73–84% accurate, and the model learns its mistakes too | Test only on hand labels, which the model never saw; report agreement between the two |
+| 19 regions is not the world | Three per class across climates, but most landscapes are unrepresented | Do not claim it generalises everywhere; the held-out regions measure how far it does |
 
 ## Non-goals
 
-- Not a global model. Three areas in one region.
+- Not a validated global model. 19 regions worldwide, three per class — far
+  wider than one country, far short of every landscape.
 - Not real-time. Radar data appears in the catalogue days after acquisition.
 - Not detecting individual buildings or fields — 50 m pixels cannot support that.
-- Not competing with published benchmarks. The dataset is self-labelled by design.
+- Not competing with published benchmarks. The labels are Dynamic World's,
+  renumbered to our own ids (all nine of its classes kept, since 6 Nov).

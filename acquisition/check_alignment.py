@@ -8,8 +8,8 @@ be completely wrong, and you will not find out until the end.
 
 So: compare the grids numerically, then look at them.
 
-    .venv\\Scripts\\python.exe check_alignment.py
-    .venv\\Scripts\\python.exe check_alignment.py --month 2021-09
+    .venv\\Scripts\\python.exe acquisition\\check_alignment.py
+    .venv\\Scripts\\python.exe acquisition\\check_alignment.py --month 2021-09
 """
 
 import argparse
@@ -19,6 +19,14 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 import rasterio
+
+import sys
+from pathlib import Path
+
+# Every script runs from its own folder, where Python cannot see config.py
+# or the other packages. Putting the project root first fixes that the same
+# way for every script, however it is launched.
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import config
 
@@ -65,13 +73,13 @@ def main():
     s2_dir = config.S2_MONTHLY / args.aoi
     pattern = f"*_{args.month}_*.tif" if args.month else "*.tif"
     s2_path = pick(sorted(s2_dir.glob(pattern)), s2_dir, pattern,
-                   f"Run fetch_s2.py --aoi {args.aoi} first.")
+                   f"Run acquisition/fetch_s2.py --aoi {args.aoi} first.")
 
-    month = s2_path.stem.split("_")[1]
+    month = config.month_of(s2_path)
     s1_dir = config.S1_MONTHLY / args.aoi
     s1_path = pick(sorted(s1_dir.glob(f"*_{month}_*.tif")), s1_dir,
                    f"*_{month}_*.tif",
-                   f"Run fetch_s1.py --months {int(month[-2:])} first.")
+                   f"Run acquisition/fetch_s1.py --months {int(month[-2:])} first.")
 
     with rasterio.open(s1_path) as radar, rasterio.open(s2_path) as colour:
         checks = [

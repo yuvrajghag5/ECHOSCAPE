@@ -27,3 +27,6 @@ desktop.ini
 
 # Keep the figures used in the README, even though they live under data/
 !docs/images/
+
+# Working notes and decision records - kept local, not published
+decision.md

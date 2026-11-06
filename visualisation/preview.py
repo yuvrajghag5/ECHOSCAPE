@@ -4,8 +4,8 @@ Look at what you downloaded.
 Makes a PNG showing each monthly radar image, so you can check the data is
 sensible before doing anything else. Water should be black, towns bright.
 
-    .venv\\Scripts\\python.exe preview.py
-    .venv\\Scripts\\python.exe preview.py --aoi mannheim
+    .venv\\Scripts\\python.exe visualisation\\preview.py
+    .venv\\Scripts\\python.exe visualisation\\preview.py --aoi mannheim
 """
 
 import argparse
@@ -15,6 +15,14 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 import rasterio
+
+import sys
+from pathlib import Path
+
+# Every script runs from its own folder, where Python cannot see config.py
+# or the other packages. Putting the project root first fixes that the same
+# way for every script, however it is launched.
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import config
 
@@ -38,7 +46,7 @@ def main():
     folder = config.S1_MONTHLY / args.aoi
     files = sorted(folder.glob("*.tif"))
     if not files:
-        raise SystemExit(f"Nothing in {folder}. Run fetch_s1.py first.")
+        raise SystemExit(f"Nothing in {folder}. Run acquisition/fetch_s1.py first.")
 
     print(f"Found {len(files)} monthly images in {folder}")
 
@@ -67,7 +75,7 @@ def main():
             axis.imshow(np.dstack([stretch(vv_db), stretch(vh_db),
                                    stretch(vv_db - vh_db)]))
 
-        month = path.stem.split("_")[1]
+        month = config.month_of(path)
         covered = float(np.mean(passes > 0)) * 100
         axis.set_title(f"{month}   {int(np.nanmax(passes))} passes   "
                        f"{covered:.0f}% covered", fontsize=9)

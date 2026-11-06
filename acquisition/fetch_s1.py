@@ -6,7 +6,8 @@ What this does, in plain terms:
   1. Asks Microsoft's free satellite catalogue which radar images exist over
      our area during the year.
   2. Picks one orbit track and sticks to it, so every image is taken from the
-     same angle.
+     same angle - a track that actually covers the area, not just the one
+     that passes most often.
   3. For each month, downloads every image from that track, already shrunk to
      50 m by the server (so we never download the huge originals).
   4. Takes the middle value of each pixel across those images. Radar is very
@@ -15,8 +16,8 @@ What this does, in plain terms:
 
 No account, no API key, no login. Run:
 
-    .venv\\Scripts\\python.exe fetch_s1.py --dry-run     # just look
-    .venv\\Scripts\\python.exe fetch_s1.py               # actually download
+    .venv\\Scripts\\python.exe acquisition\\fetch_s1.py --dry-run     # just look
+    .venv\\Scripts\\python.exe acquisition\\fetch_s1.py               # actually download
 """
 
 import argparse
@@ -27,7 +28,16 @@ import time
 import numpy as np
 import rasterio
 import requests
+from rasterio.features import rasterize
 from rasterio.io import MemoryFile
+from rasterio.transform import from_bounds
+
+from pathlib import Path
+
+# Every script runs from its own folder, where Python cannot see config.py
+# or the other packages. Putting the project root first fixes that the same
+# way for every script, however it is launched.
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import config
 
@@ -62,12 +72,45 @@ def search_scenes(bbox, year):
     return reply.json().get("features", [])
 
 
-def choose_track(scenes, wanted_orbit):
-    """Pick one orbit track - the satellite path that passes over most often.
+def track_coverage(track_scenes, months, bbox, width, height):
+    """The worst month's share of the box that this track's scenes cover.
+
+    Each scene's footprint (its outline, from the catalogue) is burned onto
+    the region's own pixel grid, so this is measured before anything is
+    downloaded. A month with no scene on the track counts as 0. Checked
+    against downloaded files on 5 Nov: within 0.5 points for every region
+    that was partly covered (paris predicted 2.0%, downloaded 2.1%).
+    """
+    transform = from_bounds(*bbox, width, height)
+    by_month = {month: [] for month in months}
+    for scene in track_scenes:
+        by_month[scene["properties"]["datetime"][:7]].append(scene["geometry"])
+
+    worst = 1.0
+    for geometries in by_month.values():
+        if not geometries:
+            return 0.0
+        seen = rasterize([(g, 1) for g in geometries], out_shape=(height, width),
+                         transform=transform, fill=0, dtype="uint8")
+        worst = min(worst, float(seen.mean()))
+    return worst
+
+
+def choose_track(scenes, wanted_orbit, bbox, width, height):
+    """Pick one orbit track: among those covering the box, the busiest.
 
     Radar brightness depends on the angle the satellite looked from. Mixing
     tracks means the same field reads differently on different dates, which the
     model would wrongly learn as a change on the ground.
+
+    Busiest alone is not enough. A track's strip of ground is ~250 km wide, and
+    a box near its edge gets clipped on every single pass - paris's busiest
+    track passes 88 times a year and covers 2% of the box. So a track must
+    cover config.MIN_TRACK_COVER of the box in its worst month to be eligible;
+    among those, the most images wins, because more passes means less speckle.
+    If none qualifies, the best-covering track is used and the caller warns.
+
+    Returns the chosen key, its scenes, every track, and each track's coverage.
     """
     tracks = {}
     for scene in scenes:
@@ -81,8 +124,17 @@ def choose_track(scenes, wanted_orbit):
     if not tracks:
         sys.exit("No scenes found. Try a different year, area, or ORBIT setting.")
 
-    best = max(tracks, key=lambda k: len(tracks[k]))
-    return best, tracks[best], tracks
+    # Every month in which ANY track flew, so a track that skips one scores 0.
+    months = sorted({s["properties"]["datetime"][:7] for s in scenes})
+    cover = {key: track_coverage(group, months, bbox, width, height)
+             for key, group in tracks.items()}
+
+    eligible = [key for key in tracks if cover[key] >= config.MIN_TRACK_COVER]
+    if eligible:
+        best = max(eligible, key=lambda k: len(tracks[k]))
+    else:
+        best = max(tracks, key=lambda k: (cover[k], len(tracks[k])))
+    return best, tracks[best], tracks, cover
 
 
 def download_window(item_id, bbox, width, height, attempts=3):
@@ -146,8 +198,12 @@ def monthly_composite(scenes, bbox, width, height):
     return vv_med, vh_med, observations, profile
 
 
-def write_geotiff(path, vv, vh, observations, profile):
-    """Save three layers: radar VV, radar VH, and how many passes saw each pixel."""
+def write_geotiff(path, vv, vh, observations, profile, track):
+    """Save three layers: radar VV, radar VH, and how many passes saw each pixel.
+
+    The orbit track goes into the file's tags, so a later run can check that
+    every month of a region came from the same one.
+    """
     profile = dict(profile)
     profile.update(count=3, dtype="float32", nodata=np.nan,
                    compress="deflate", driver="GTiff")
@@ -159,6 +215,20 @@ def write_geotiff(path, vv, vh, observations, profile):
         dst.set_band_description(1, "VV gamma0 (monthly median)")
         dst.set_band_description(2, "VH gamma0 (monthly median)")
         dst.set_band_description(3, "number of valid passes")
+        dst.update_tags(orbit_state=str(track[0]), relative_orbit=str(track[1]))
+
+
+def track_on_disk(path):
+    """The (direction, track) a radar file was made from, as strings, or None.
+
+    Files written before 5 Nov carry no tag, so None means "unknown", not wrong.
+    Strings on both sides of any comparison, so 110 and "110" match.
+    """
+    with rasterio.open(path) as src:
+        tags = src.tags()
+    if "relative_orbit" not in tags:
+        return None
+    return tags.get("orbit_state"), tags["relative_orbit"]
 
 
 def main():
@@ -211,12 +281,23 @@ def fetch_one_area(aoi_name, args, wanted_months):
 
     print("Asking the catalogue what exists ...")
     scenes = search_scenes(bbox, args.year)
-    (direction, track), track_scenes, all_tracks = choose_track(scenes, config.ORBIT)
+    (direction, track), track_scenes, all_tracks, cover = choose_track(
+        scenes, config.ORBIT, bbox, width, height)
 
     print(f"Found {len(scenes)} images in total, on these tracks:")
+    print(f"   (covers = share of the box seen in the worst month; "
+          f"a track needs {100 * config.MIN_TRACK_COVER:.0f}%)")
     for (d, t), group in sorted(all_tracks.items(), key=lambda kv: -len(kv[1])):
         mark = "  <- using this one" if (d, t) == (direction, track) else ""
-        print(f"   {d:>10} track {t:<4} {len(group):3d} images{mark}")
+        short = "" if cover[(d, t)] >= config.MIN_TRACK_COVER else "  too little of the box"
+        print(f"   {d:>10} track {t:<4} {len(group):3d} images   "
+              f"covers {100 * cover[(d, t)]:5.1f}%{mark}{short}")
+
+    if cover[(direction, track)] < config.MIN_TRACK_COVER:
+        print(f"\n   !! No track covers {100 * config.MIN_TRACK_COVER:.0f}% of this box. "
+              f"Using the best, {100 * cover[(direction, track)]:.0f}%.")
+        print("   !! The uncovered pixels get pass count 0, so they are excluded")
+        print("   !! from training and from every percentage - lost, not wrong.")
 
     by_month = {m: [] for m in range(1, 13)}
     for scene in track_scenes:
@@ -243,6 +324,15 @@ def fetch_one_area(aoi_name, args, wanted_months):
         out_path = out_dir / f"{aoi_name}_{label}_{args.res}m.tif"
 
         if out_path.exists():
+            # Skipping is only safe if the file came from the same track, or
+            # one region would end up with months seen from two angles.
+            existing = track_on_disk(out_path)
+            if existing is not None and existing != (str(direction), str(track)):
+                sys.exit(f"\n   {label} on disk came from {existing[0]} track {existing[1]}, "
+                         f"but the track for {aoi_name} is now {direction} {track}.\n"
+                         f"   Mixing them would make the same ground read differently "
+                         f"between months.\n   Delete {out_dir} and re-run, so all "
+                         f"12 months come from one track.")
             print(f"   {label}  already done, skipping")
             continue
         if not scenes_this_month:
@@ -255,7 +345,7 @@ def fetch_one_area(aoi_name, args, wanted_months):
             print("  failed, no usable data")
             continue
         vv, vh, observations, profile = result
-        write_geotiff(out_path, vv, vh, observations, profile)
+        write_geotiff(out_path, vv, vh, observations, profile, (direction, track))
 
         size_mb = out_path.stat().st_size / 1e6
         total_mb += size_mb

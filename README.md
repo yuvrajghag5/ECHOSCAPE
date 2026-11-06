@@ -1,4 +1,4 @@
-# Sentinel-1 Land Use / Land Cover Segmentation
+# ECHOSCAPE — Sentinel-1 Land Use / Land Cover Segmentation
 
 SRH Hochschule Heidelberg — Deep Learning
 
@@ -7,97 +7,139 @@ optical imagery at prediction time — plus a prototype that takes a latitude,
 longitude and start month and returns 12 monthly land-cover maps with per-class
 area percentages and month-to-month change.
 
+Optical imagery never reaches the model. It is used only to make the labels —
+Google Dynamic World, built from Sentinel-2 — and is then thrown away.
+
 ## Status
+
+| Stage | State |
+|---|---|
+| 1. Download radar (Sentinel-1) | **done** for 19 regions; **12 more** being added for validation and test |
+| 2. Download colour (Sentinel-2), alignment checked | same |
+| 2c. Choose regions worldwide | **done** — 31 regions: 18 train, 6 validation, 7 test |
+| 3. Labels | **Dynamic World** for every region. Hand labels **archived** 5 Nov |
+| 4. Assemble the dataset | rebuilt once the 12 new regions are in |
+| 5. Train | **three architectures from scratch**, compared, the best taken forward |
+| 6. Evaluate | not started |
+| 7. Prototype | not started |
+
+The labels are machine-made, so every score measures **agreement with Dynamic
+World** — itself 73–84% accurate in published comparisons — not agreement with
+ground truth. Read the numbers in that light.
+
+**Right now:** all 31 regions are downloaded and labelled with all nine Dynamic
+World classes (water, built-up, trees, cropland, grass, bare, shrub & scrub,
+flooded vegetation, snow & ice). U-Net, DeepLabV3+ and SegFormer are written in
+`training/model.py`, one notebook each in `notebooks/` (`02_train_unet`,
+`02_train_deeplab`, `02_train_seg`), all trained the same way: 40 full epochs,
+weight averaging, best epoch kept. `docs/phase.md` lists the remaining steps.
+
+## Project layout
+
+```
+exam/
+  config.py            every setting - regions, splits, year, resolution, classes, paths
+  acquisition/         download radar and colour onto one grid, check they line up
+    fetch_s1.py  fetch_s2.py  run_all.py  check_alignment.py
+  labelling/           export Dynamic World, put it on the radar grid, check it
+    gee/export_dynamic_world.js  import_labels.py  check_labels.py
+  training/            cut tiles, and the networks' shapes (training is in notebooks/)
+    build_dataset.py  model.py
+  visualisation/       pictures of the data, for looking and for the report
+    preview.py  to_png.py  compare_s1_s2.py
+  notebooks/           ALL model training, run top to bottom
+  docs/                design, architecture, phases, tools, build log
+  data/  outputs/  weights/
+```
+
+Run every script **from this root folder**, e.g.
+`.venv\Scripts\python.exe training\build_dataset.py`. Each one puts the root on
+Python's path itself, so `config.py` is found however it is launched.
 
 ## Documentation
 
 | File | Contents |
 |---|---|
-| `design.md` | What this solves and for whom, the key decisions, known limitations |
-| `architecture.md` | How the pieces fit, data layout, the invariants that must hold |
-| `phase.md` | All 8 phases, what each produces, current status |
-| `tech.md` | Every tool choice with its reason, and what was deliberately avoided |
-| `changes.md` | Build log — per phase: what was built, what broke, how it was fixed |
-| `evaluation/data_eval.ipynb` | Ten checks to run on the radar alone, before labelling |
+| [docs/design.md](docs/design.md) | What this solves and for whom, the key decisions, known limitations |
+| [docs/architecture.md](docs/architecture.md) | How the pieces fit, data layout, the invariants that must hold |
+| [docs/phase.md](docs/phase.md) | All 8 phases, what each produces, current status |
+| [docs/tech.md](docs/tech.md) | Every tool choice with its reason, and what was deliberately avoided |
+| [docs/changes.md](docs/changes.md) | Build log — per phase: what was built, what broke, how it was fixed |
+| [notebooks/](notebooks/) | Model training, with results |
 
-| Stage | State |
-|---|---|
-| 1. Download radar (Sentinel-1) | **done** — 36 monthly composites |
-| 2. Download colour (Sentinel-2) + alignment check | **done** — 31 composites, aligned |
-| 2b. Evaluate the data before labelling | skeleton written, not run |
-| 3. Label the data | not started |
-| 4. Assemble the dataset | not started |
-| 5. Train the model | not started |
-| 6. Evaluate the model | not started |
-| 7. Prototype | not started |
-
-Current dataset: three areas × 12 months at **50 m**, about 220 MB on disk.
-Not in this repository — see **Data** below.
+`docs/changes.md` is the most useful of the five — it records what broke.
 
 ## Setup
 
-No account and no API key are needed. The satellite data comes from Microsoft
-Planetary Computer, which serves it anonymously.
+No account and no API key are needed for the satellite data: Microsoft
+Planetary Computer serves it anonymously. The labels come from Google Earth
+Engine, which needs a (free, noncommercial) Google account — but only to
+regenerate them; the exported labels ship with the dataset.
 
 ```bash
 py -3.11 -m venv .venv
 .venv\Scripts\python.exe -m pip install -r requirements.txt
+.venv\Scripts\python.exe -m pip install torch --index-url https://download.pytorch.org/whl/cu121
 ```
 
-Python 3.11 specifically — 3.14 has no CUDA build of PyTorch, which stage 3 needs.
+Python 3.11 specifically — 3.14 has no CUDA build of PyTorch. PyTorch comes
+from its own index because plain `pip install torch` gives a CPU-only build.
 
-## Usage
+## The pipeline, in order
 
-Look at what data exists before downloading anything:
+### 1. Radar and colour
 
 ```bash
-.venv\Scripts\python.exe fetch_s1.py --dry-run
+.venv\Scripts\python.exe acquisition\run_all.py --dry-run      # see what exists first
+.venv\Scripts\python.exe acquisition\run_all.py --skip-png     # download what is missing
 ```
 
-Download all 12 months for **all three areas** (~130 MB):
+`run_all.py` does radar, then colour, region by region, and skips anything
+already on disk. **Order matters:** the colour imagery is downloaded onto the
+grid the radar defines, which is what guarantees the two line up. It ends with
+a completeness table naming any month that failed.
+
+The colour imagery is still needed: `import_labels.py` uses its yearly
+greenness to correct one known Dynamic World error (below).
+
+### 2. Labels — Google Dynamic World
+
+1. Paste `labelling/gee/export_dynamic_world.js` into the
+   [Earth Engine Code Editor](https://code.earthengine.google.com) and Run it.
+   It creates one export task per region listed in `EXPORT_ONLY` — click **RUN**
+   on each in the Tasks tab. They land in a Google Drive folder, `echoscape_dw`.
+2. Download every file into `data/dw_raw/`, then:
 
 ```bash
-.venv\Scripts\python.exe fetch_s1.py
+.venv\Scripts\python.exe labelling\import_labels.py
+.venv\Scripts\python.exe labelling\check_labels.py
 ```
 
-Then the colour imagery used to build labels, and confirm it lines up with the
-radar:
+`import_labels.py` lays each 10 m export onto an exact 5×-finer copy of the
+radar grid and lets every 50 m pixel take a majority vote of its 25 — leaving
+mixed pixels such as field edges unlabelled. It also applies one correction:
+**cropland must green up.** Dynamic World labelled the Mongolian steppe 46%
+cropland at a yearly peak greenness of 0.23, where real cropland peaks at 0.7–0.8,
+so "cropland" that never greens past 0.40 is relabelled grass, or bare.
+
+`check_labels.py` confirms every mask sits on the radar grid and flags zones
+the optical imagery contradicts.
+
+### 3. Build the tiles
 
 ```bash
-.venv\Scripts\python.exe fetch_s2.py
-.venv\Scripts\python.exe check_alignment.py
+.venv\Scripts\python.exe training\build_dataset.py
 ```
 
-Both scripts do every area in one run by default. Add `--aoi mannheim` for just
-one. Anything already downloaded is skipped, so re-running is safe.
+Cuts every region into 128 × 128 tiles, one per region-month, and splits them
+by **whole region** into train / val / test as `config.py` assigns them.
 
-Look at what you got:
+### 4. Train — in the notebooks
 
-```bash
-.venv\Scripts\python.exe preview.py
-.venv\Scripts\python.exe to_png.py
-```
-
-`preview.py` makes one overview image per area. `to_png.py` converts every
-downloaded file into an ordinary PNG in `data/png/` that opens in any image
-viewer — see **Viewing the data** below for why that is needed.
-
-Other options:
-
-```bash
-.venv\Scripts\python.exe fetch_s1.py --aoi odenwald      # a different area
-.venv\Scripts\python.exe fetch_s1.py --months 1-3        # just some months
-.venv\Scripts\python.exe fetch_s1.py --year 2025         # a different year
-.venv\Scripts\python.exe fetch_s1.py --res 100           # coarser pixels
-.venv\Scripts\python.exe fetch_s2.py --max-cloud 60      # accept cloudier images
-.venv\Scripts\python.exe compare_s1_s2.py                # radar vs camera
-```
-
-Everything else is configured in `config.py`.
-
-**Order matters.** `fetch_s1.py` must run before `fetch_s2.py`, because the
-colour imagery is downloaded onto the grid defined by the radar files. That is
-what guarantees the two line up.
+All model training happens in `notebooks/`. Each notebook has a settings cell
+at the top, and runs an **overfit test** on ten tiles before any real run: if
+the loss will not fall to near zero, the bug is in the code, and that costs two
+minutes to find instead of a day.
 
 ## Key decisions
 
@@ -108,20 +150,27 @@ pixels together removes most of it — so the coarser data is radiometrically
 
 **Year 2021.** Sentinel-1A and 1B were both operating, giving 6–8 passes every
 month. Sentinel-1B failed in December 2021, so 2022–2024 have roughly half that.
-2025 recovers but its first four months are still thin. Even coverage matters
-here because the assignment asks for month-to-month change — uneven pass counts
-would show up as change that is not really on the ground.
+Even coverage matters because the assignment asks for month-to-month change.
 
-**One orbit track per area.** Radar brightness depends on the angle the
-satellite looked from. Mixing ascending and descending passes makes identical
+**One orbit track per region.** Radar brightness depends on the angle the
+satellite looked from. Mixing passes from different tracks makes identical
 ground read differently, which the model would learn as a false change.
 
-**Monthly median, not mean.** The median ignores one-off bright returns and
-suppresses speckle better.
+**31 regions worldwide, split by region.** 18 for training, three per class at
+class transitions. Validation and test are **one region dominated by each
+class**, so every class is scored in both — chosen by measurement: each has
+radar in all 12 months, and ESA WorldCover confirms the class dominates. That
+check rejected two obvious-sounding picks (a "steppe" that was 81% lake, and a
+lake box with no shoreline). Splitting by whole region, never by tile, keeps
+near-identical neighbouring tiles from sitting on both sides and inflating the
+score.
+
+**Mannheim is a test region,** so the screen recording shows a city the model
+never trained on.
 
 ## Data
 
-Each file is a GeoTIFF with three layers:
+Each radar file is a GeoTIFF with three layers:
 
 | Band | Contents |
 |---|---|
@@ -133,28 +182,32 @@ Band 3 matters: any pixel with zero passes must be excluded from the area
 percentages, or months with partial coverage silently deflate every class and
 invent month-boundary changes.
 
-Convert to decibels for viewing or training with `10 * log10(value)`.
+Labels are single-band GeoTIFFs on the identical grid, values 0–6, where 0
+means unlabelled: water, built-up, trees, cropland, grass / low vegetation,
+bare / sparse.
 
 ## Viewing the data
 
-**The `.tif` files will not open in Windows Photos, and that is normal.** They are
-GeoTIFFs, not pictures. Each pixel holds a decimal measurement rather than a
-brightness from 0 to 255, there are more layers than a picture has, and the file
-carries map coordinates. Ordinary image viewers cannot interpret any of that.
-
-Three ways to look at them:
+**The `.tif` files will not open in Windows Photos, and that is normal.** They
+are GeoTIFFs, not pictures: each pixel holds a measurement, there are more
+layers than a picture has, and the file carries map coordinates.
 
 | Want | Use |
 |---|---|
-| Something you can double-click | `to_png.py` → `data/png/` |
-| A quick overview of a whole area | `preview.py` |
+| Something you can double-click | `visualisation\to_png.py` → `data/png/` |
+| A quick overview of a whole region | `visualisation\preview.py` |
 | The real thing, with coordinates and pixel values | [QGIS](https://qgis.org) — free |
-
-QGIS is the proper tool: it will show you the actual backscatter value under your
-cursor and let you overlay the radar, the colour imagery and later your labels on
-top of each other. Worth installing before Phase 3.
 
 ## Attribution
 
-Sentinel-1 RTC from Microsoft Planetary Computer, CC-BY-4.0.
+Sentinel-1 RTC and Sentinel-2 L2A from Microsoft Planetary Computer, CC-BY-4.0.
 Contains modified Copernicus Sentinel data.
+
+Labels: "This dataset is produced for the Dynamic World Project by Google in
+partnership with National Geographic Society and the World Resources
+Institute." CC-BY-4.0.
+
+Region checks used ESA WorldCover 2021 (v200), CC-BY-4.0. Benchmark figures
+quoted for context come from Copernicus-Bench (Wang et al., 2025,
+[arXiv:2503.11849](https://arxiv.org/abs/2503.11849)) and the 2020 IEEE GRSS
+Data Fusion Contest.
