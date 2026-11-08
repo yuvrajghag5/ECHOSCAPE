@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ECHOSCAPE — land cover from radar</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wdth,wght@12..96,75..100,400..800&family=Atkinson+Hyperlegible:wght@400;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<div class="shell">
+
+  <!-- ============================================================ controls -->
+  <aside class="rail" aria-label="Choose a place">
+    <header class="brand">
+      <h1 class="wordmark">ECHO<span>SCAPE</span></h1>
+      <p class="thesis">Land cover read from radar echoes alone. No optical image ever reaches the model.</p>
+    </header>
+
+    <form id="form" class="controls" autocomplete="off">
+      <fieldset>
+        <legend>Where</legend>
+        <div class="pair">
+          <label>Latitude <input id="lat" type="number" step="0.001" min="-80" max="80" required></label>
+          <label>Longitude <input id="lon" type="number" step="0.001" min="-180" max="180" required></label>
+        </div>
+        <div id="familiar" class="familiar" aria-live="polite"></div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Which 12 months</legend>
+        <select id="start" aria-label="The 12 months to map"></select>
+        <p class="hint" id="startHint">The model trained on 2021.</p>
+      </fieldset>
+
+      <button id="go" class="go" type="submit">Map 12 months</button>
+    </form>
+
+    <section class="places" aria-label="Places to try">
+      <h2 class="eyebrow">Places to try</h2>
+      <div id="places" class="chips"></div>
+    </section>
+
+    <section id="status" class="status" hidden aria-live="polite">
+      <h2 class="eyebrow">Progress</h2>
+      <ol class="ladder">
+        <li data-stage="searching">Find the radar passes</li>
+        <li data-stage="downloading">Download and composite
+          <span class="pips" id="pips" aria-hidden="true"></span></li>
+        <li data-stage="mapping">Map land cover</li>
+      </ol>
+      <p class="status-line"><span id="statusText">Waiting</span> <span class="clock" id="clock"></span></p>
+      <p class="error" id="error" hidden></p>
+    </section>
+
+    <footer class="modelcard" id="modelcard"></footer>
+  </aside>
+
+  <!-- ============================================================ the two pictures -->
+  <main class="stage">
+    <div class="frames">
+      <figure class="frame">
+        <figcaption><b>Radar · <i id="capRadar">—</i></b> <span>Sentinel-1 VV, the month's median</span></figcaption>
+        <div class="pic" id="picRadar">
+          <img id="imgRadar" alt="" hidden>
+          <p class="placeholder">The month's radar image appears here.</p>
+        </div>
+      </figure>
+      <figure class="frame">
+        <figcaption><b>Land cover · <i id="capClasses">—</i></b> <span id="capModel">predicted from that radar alone</span></figcaption>
+        <div class="pic" id="picClasses">
+          <img id="imgClasses" alt="" hidden>
+          <p class="placeholder">Its land-cover map appears here.</p>
+        </div>
+      </figure>
+    </div>
+
+    <nav class="months" id="months" aria-label="Month">
+      <button class="play" id="play" type="button" aria-label="Play the year" disabled>
+        <svg viewBox="0 0 16 16" aria-hidden="true"><path id="playIcon" d="M4 2.5v11l9-5.5z"/></svg>
+      </button>
+      <div class="month-row" id="monthRow"></div>
+    </nav>
+    <p class="legend-note" id="boxNote">Each picture covers a 20 × 20 km box centred on the point, at 50 m per pixel. Dark radar is smooth ground or water; bright is rough or built.</p>
+  </main>
+
+  <!-- ============================================================ readout -->
+  <section class="readout" aria-label="Results">
+    <div class="dial-wrap">
+      <svg id="dial" class="dial" viewBox="0 0 360 360" role="img" aria-label="Class shares for each of the 12 months"></svg>
+      <div class="dial-centre" aria-hidden="true">
+        <span id="dialMonth">—</span>
+        <span id="dialYear"></span>
+      </div>
+    </div>
+
+    <div id="empty" class="empty">
+      <h2>Enter a place, then map its year.</h2>
+      <p>Each ring segment will be one month. Its colours show how much of the box each land-cover class took that month.</p>
+    </div>
+
+    <div id="results" hidden>
+      <div class="month-head">
+        <h2 id="monthTitle">—</h2>
+        <span id="monthMeta" class="meta"></span>
+      </div>
+      <ul id="shares" class="shares"></ul>
+
+      <h3 class="eyebrow">Over the 12 months</h3>
+      <ul id="swings" class="swings"></ul>
+      <p class="fine" id="noiseNote"></p>
+
+      <h3 class="eyebrow">Checks</h3>
+      <ul id="checks" class="checks"></ul>
+    </div>
+  </section>
+</div>
+
+<script src="/static/app.js"></script>
+</body>
+</html>

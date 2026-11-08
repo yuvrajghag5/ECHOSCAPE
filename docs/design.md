@@ -89,12 +89,8 @@ and November it would not exist.
 **This is the project's argument in one line: train where optical works, deploy
 where it does not.**
 
-The teacher was originally a human labelling by hand. Since 3 November it is a
-machine — Google Dynamic World — and the argument holds unchanged, because what
-matters is that optical makes the labels and radar alone does the predicting.
-
-From 3 to 5 November the hand labels were kept as an independent test set.
-On 5 November they were archived and Dynamic World became the only labels, for
+The teacher is Google Dynamic World, made from Sentinel-2 alone: optical makes
+the labels and radar alone does the predicting. It supplies the labels for
 training, validation and test alike. **The consequence, stated plainly: every
 score now measures agreement with Dynamic World, not with ground truth** — and
 Dynamic World is itself 73–84% accurate in published comparisons. A model can
@@ -208,52 +204,6 @@ it is true.
 
 ## Decisions and their trade-offs
 
-### Label regions, not points
-
-Semantic segmentation needs a class for *every* pixel. Scattered labelled dots do
-not provide that.
-
-Clicking inside a field and having a model outline the whole region gives dense,
-genuinely human-made masks for a few hundred clicks. Slower per area than dotting,
-but it satisfies "label it yourself" literally, with no argument to have later
-about whether a Random Forest did the labelling.
-
-*Since 3 November these masks are no longer the training data. They are the
-test set — see the next decision.*
-
-### Train on machine labels, test on hand labels
-
-> **Superseded on 5 November 2026.** The hand labels were then archived and
-> the Random Forest baseline dropped; every label is Dynamic World, and
-> validation and test use new regions, one dominated by each class. Kept
-> below as the record of how the project got there.
-
-
-Decided 3 November, once the professor confirmed external labels are allowed.
-
-Hand labelling produced 14 regions with 2.8 M labelled pixels in about two
-weeks, and it exposed three limits no amount of extra clicking would fix in the
-time left: grass had 2,037 pixels against bare's 779,241 and could not be
-learned; 41% of every tile was unlabelled; and the U-Net overfitted after about
-six epochs because 14 regions are only ~233 distinct pieces of ground.
-
-An external product fixes the first two at once and makes the third cheap to
-address. But training *and* testing on it would only measure how well radar
-imitates another model — one that is itself 73–84% accurate. So the hand masks
-move to the test side, where they become the reference that matters.
-
-Two rules make this sound:
-
-- **A region is train or test, never both**, whatever labels it carries.
-- **The external labels are downsampled 10 m → 50 m by majority vote** onto the
-  radar grid. They are a label source, not model input, so the "no
-  high-resolution data" rule is untouched — the same argument that always
-  justified labelling on 10 m Sentinel-2.
-
-It also yields an experiment worth reporting: the same U-Net trained on sparse,
-careful hand labels against dense, noisier machine labels, scored on the same
-human test set. *Does quantity of labels beat quality?*
-
 ### 50 m pixels — not 10 m, and not 100 m
 
 Required by the professor to be coarse, but 50 m was chosen by measurement, not
@@ -361,7 +311,6 @@ two passes from the same month.
 | Winter was never supervised | The optical teacher cannot see in October–November | Document it; it is also the project's whole point |
 | Water fails in high wind | Wind roughens the surface so it stops reflecting away | Note it as a known failure mode |
 | Labels are machine-made | Dynamic World is 73–84% accurate; the model learns its mistakes and is scored against them | Every score is agreement with Dynamic World, said so with each result; the cropland rule removes one measured systematic error (steppe called cropland) |
-| (superseded) Training labels are machine-made | An external product is 73–84% accurate, and the model learns its mistakes too | Test only on hand labels, which the model never saw; report agreement between the two |
 | 19 regions is not the world | Three per class across climates, but most landscapes are unrepresented | Do not claim it generalises everywhere; the held-out regions measure how far it does |
 
 ## Non-goals

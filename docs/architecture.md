@@ -41,16 +41,17 @@ PREDICTION PATH (runs live, radar only)
   user: lat / lon / start month
          |
          v
-  app/fetch.py 🔜  (SAME download + preprocessing as fetch_s1.py)
+  app/pipeline.py ✅  fetch: fetch_s1's own functions (track choice,
+         |            server-side crop at 50 m, monthly median)
+         |            preprocess: build_dataset.radar_channels - the training scaling
+         |            infer: best model by validation, tiles overlapping by half
+         |            stats: shares over ground seen in all 12 months,
+         |            month-to-month and total change, PNG maps
+         v
+  app/server.py ✅  (FastAPI: run / progress / result / images)
          |
          v
-  app/infer.py 🔜  (load weights, tile, predict, stitch)
-         |
-         v
-  app/stats.py 🔜  (percentages, month-to-month deltas, total delta)
-         |
-         v
-  app/streamlit_app.py 🔜  (map picker, 12 maps, table, charts)
+  app/static/ ✅  (lat / lon / months in; radar | land cover side by side per month, year dial, change)
 ```
 
 ## The constraint that holds it together
@@ -65,8 +66,11 @@ This is enforced two ways:
 
 1. Every setting lives in `config.py`. No script hard-codes a resolution, year or
    area.
-2. `app/fetch.py` will reuse the functions in `fetch_s1.py` rather than
-   reimplementing them.
+2. `app/pipeline.py` imports `fetch_s1` and `build_dataset.radar_channels`
+   instead of reimplementing them. The one adaptation is the date range
+   (any 12 months, not one calendar year). Each month is written as a GeoTIFF
+   with `fetch_s1.write_geotiff` and read back with `radar_channels`, exactly
+   as the training files were.
 
 ## Alignment: structural, not hoped for
 
@@ -110,11 +114,14 @@ evidence. Matching metadata alone is not.
 | `acquisition/check_alignment.py` | Prove radar and optical describe the same ground. |
 | `labelling/check_labels.py` | Prove a label mask sits on the radar grid, and flag zones the optical imagery contradicts. Run it before training on any new mask. |
 | `labelling/gee/export_dynamic_world.js` | Paste into the Earth Engine Code Editor. Builds a 2021 Dynamic World composite per region and exports it to Drive. |
+| `labelling/gee/export_dw_monthly.js` | Earth Engine again: Dynamic World's class shares per region per month of 2021, one small CSV (`outputs/dw_monthly_2021.csv`). The independent check for notebook 04. |
 | `labelling/import_labels.py` | Lays each Dynamic World export on the radar grid, votes 10 m to 50 m, keeps all nine Dynamic World classes (renumbered, ids 1-9), and relabels "cropland" that never greens up. |
 | `training/build_dataset.py` | Cut radar and masks into matching 128x128 tiles, one per region-month, drop mostly-empty tiles, split by whole region, write a manifest. |
 | `training/model.py` | Three networks written from scratch, sized alike: U-Net (1.94 M), DeepLabV3+ (2.35 M), SegFormer (2.28 M). `build_model(name, **kwargs)` builds any of them; checkpoints store both, so the prototype rebuilds exactly what was trained. |
-| `notebooks/02_train_unet.ipynb` | Trains whichever `MODEL` is set: class-weighted loss, unlabelled pixels ignored, radar-specific augmentation, overfit test, early stopping that survives a re-run, validation and test scores, confusion matrix, comparison table across all runs. |
-| `notebooks/` | The two submitted notebooks. They import the modules above rather than copying them. |
+| `notebooks/01_train_unet.ipynb`, `02_train_deeplab`, `03_train_seg` | One per model, identical but for `MODEL`: class-weighted loss, unlabelled pixels ignored, radar-specific augmentation, overfit test, 40 full epochs with weight averaging (best kept), validation and test scores, confusion matrix, comparison table across all runs. |
+| `notebooks/05_segformer_60_epochs.ipynb` | Notebook 03 with `EPOCHS = 60`, saved as run `segformer60`: tests whether longer training helps without touching the 40-epoch run. |
+| `notebooks/06_segformer_big.ipynb` | Notebook 05 with a SegFormer shaped like MiT-B2 (27.4 M parameters, `SIZE`), saved as run `segformer_big`: tests whether a bigger model helps. Meant for the datalab GPU. Both 05 and 06 load tiles with `WORKERS` parallel processes. |
+| `notebooks/04_monthly_change.ipynb` | The best run (by validation) maps all 12 months of every test region; class share per month and per season, a noise floor from built-up, the biggest changes, maps, and the comparison with monthly Dynamic World. Writes `outputs/monthly_change_<run>.json` for the prototype. |
 | `visualisation/preview.py` | Visual sanity check of the radar composites. |
 | `visualisation/compare_s1_s2.py` | Side-by-side radar vs optical, for the report. |
 | `visualisation/to_png.py` | Convert GeoTIFFs to ordinary PNGs. The `.tif` files hold decimal measurements and map coordinates, so normal image viewers cannot open them. |
@@ -124,7 +131,9 @@ evidence. Matching metadata alone is not.
 | File | Responsibility |
 |---|---|
 | `evaluate.py` | Per-class IoU on the held-out regions, confusion matrix, noise-floor measurement. |
-| `app/` | The prototype: fetch, infer, stats, visualisation, Streamlit shell. |
+| `app/pipeline.py` | The prototype's engine: point + start month -> 12 radar composites -> 12 maps, shares, change. Cached in `data/app_cache/<lat>_<lon>_<start>_<size>km/`. |
+| `app/server.py` | FastAPI on port 8010: `/api/info`, `/api/run` (starts a job), `/api/job/<key>` (progress), `/api/result/<key>`, `/api/image/<key>/<png>`. One run at a time. |
+| `app/static/` | The page: `index.html`, `style.css`, `app.js`. |
 
 ## Code layout
 
@@ -161,10 +170,9 @@ weights would simply refuse to load.
 data/
   s1_monthly/<area>/<area>_<year>-<mm>_50m.tif   ✅  radar, 3 bands
   s2_monthly/<area>/<area>_<year>-<mm>_50m.tif   ✅  optical, 7 bands
-  labels/<area>/<area>_labels.tif                ✅  Dynamic World masks, 0-6 - the only labels
+  labels/<area>/<area>_labels.tif                ✅  Dynamic World masks, 0-9
   dw_raw/dw2021_<area>.tif                       ✅  Dynamic World exports, 10 m, 3 bands
-  tiles/<split>/*.npz + manifest.csv             🔜  rebuilt once the 12 new regions land
-  archive/hand_labels/                           ✅  the 14 hand masks, archived 5 Nov, unused
+  tiles/<split>/*.npz + manifest.csv             🔜  rebuild for the nine classes
 weights/                                         🔜  trained models
 outputs/                                         ✅  scores, curves, figures
 ```

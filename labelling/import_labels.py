@@ -37,7 +37,7 @@ it: it labelled the Mongolian steppe 46% cropland at a yearly peak NDVI of
 0.23, where real cropland peaks at 0.71-0.81. Cropland is sown, grown and
 harvested, so somewhere in the year it carries a full canopy; a "cropland"
 pixel that never does is relabelled from the Sentinel-2 greenness already on
-the radar grid. Same thresholds check_labels.py holds the hand masks to.
+the radar grid. Same thresholds check_labels.py checks every mask against.
 --no-crop-rule turns it off, to measure what it changed.
 
 """
@@ -131,7 +131,7 @@ def vote(classes_fine, usable_fine, height, width):
 
 
 def write_safely(mask, profile, path):
-    """Same discipline as the annotator: write beside, reopen, prove the grid
+    """Write beside, reopen, prove the grid
     survived, then swap in. A mask on the wrong grid describes the wrong
     ground and nothing downstream would ever notice."""
     profile = profile.copy()

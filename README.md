@@ -14,14 +14,14 @@ Google Dynamic World, built from Sentinel-2 — and is then thrown away.
 
 | Stage | State |
 |---|---|
-| 1. Download radar (Sentinel-1) | **done** for 19 regions; **12 more** being added for validation and test |
+| 1. Download radar (Sentinel-1) | **done** — 31 regions |
 | 2. Download colour (Sentinel-2), alignment checked | same |
 | 2c. Choose regions worldwide | **done** — 31 regions: 18 train, 6 validation, 7 test |
-| 3. Labels | **Dynamic World** for every region. Hand labels **archived** 5 Nov |
-| 4. Assemble the dataset | rebuilt once the 12 new regions are in |
-| 5. Train | **three architectures from scratch**, compared, the best taken forward |
-| 6. Evaluate | not started |
-| 7. Prototype | not started |
+| 3. Labels | **Dynamic World** for every region, all nine of its classes |
+| 4. Assemble the dataset | **done** — nine classes |
+| 5. Train | **done** — three architectures from scratch; SegFormer best on validation (51.3%), all three tie on test (~31% over 9 classes, ~47% over the 6 main ones) |
+| 6. Evaluate | monthly change run on the 7 test regions; Dynamic World check pending |
+| 7. Prototype | **built** — `app/`, a web page: any point on Earth, any 12 months since 2017 |
 
 The labels are machine-made, so every score measures **agreement with Dynamic
 World** — itself 73–84% accurate in published comparisons — not agreement with
@@ -30,9 +30,12 @@ ground truth. Read the numbers in that light.
 **Right now:** all 31 regions are downloaded and labelled with all nine Dynamic
 World classes (water, built-up, trees, cropland, grass, bare, shrub & scrub,
 flooded vegetation, snow & ice). U-Net, DeepLabV3+ and SegFormer are written in
-`training/model.py`, one notebook each in `notebooks/` (`02_train_unet`,
-`02_train_deeplab`, `02_train_seg`), all trained the same way: 40 full epochs,
-weight averaging, best epoch kept. `docs/phase.md` lists the remaining steps.
+`training/model.py`, one notebook each in `notebooks/` (`01_train_unet`,
+`02_train_deeplab`, `03_train_seg`), all trained the same way: 40 full epochs,
+weight averaging, best epoch kept. All three are trained (results in
+`docs/changes.md`, Phase 5 §7). `notebooks/04_monthly_change.ipynb` then maps
+every month of 2021 and reports how much of each region each class covered,
+month by month. `docs/phase.md` lists the remaining steps.
 
 ## Project layout
 
@@ -48,6 +51,8 @@ exam/
   visualisation/       pictures of the data, for looking and for the report
     preview.py  to_png.py  compare_s1_s2.py
   notebooks/           ALL model training, run top to bottom
+  app/                 the prototype: web server, pipeline, page
+    server.py  pipeline.py  static/
   docs/                design, architecture, phases, tools, build log
   data/  outputs/  weights/
 ```
@@ -140,6 +145,34 @@ All model training happens in `notebooks/`. Each notebook has a settings cell
 at the top, and runs an **overfit test** on ten tiles before any real run: if
 the loss will not fall to near zero, the bug is in the code, and that costs two
 minutes to find instead of a day.
+
+### 5. How the land changed over the year
+
+`notebooks/04_monthly_change.ipynb` maps every month of the test regions and
+reports each class's share per month and per season. For its check against
+optical data, run `labelling/gee/export_dw_monthly.js` in Earth Engine and
+save the CSV as `outputs/dw_monthly_2021.csv`.
+
+### 6. The prototype
+
+```bash
+.venv\Scripts\python.exe app\server.py
+```
+
+Then open http://127.0.0.1:8010. Type a latitude and longitude (or pick one of
+the places listed), choose which 12 months, and press **Map 12 months**. The
+page fetches Sentinel-1 for a 20 km box around the point, live, with the same
+code that built the training data. It runs the best model (by validation) on
+every month and shows:
+
+- side by side, the month's radar picture and the land-cover map the model
+  made from it; the month buttons or **Play** step through all 12;
+- a year dial with each class's share per month;
+- the month-to-month and whole-year change;
+- whether the place was ever in training, validation or test.
+
+A new point takes a few minutes, mostly downloading. Results are cached in
+`data/app_cache/`, so a place opens instantly the second time.
 
 ## Key decisions
 

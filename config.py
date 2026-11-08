@@ -58,8 +58,8 @@ MIN_TRACK_COVER = 0.90
 # ---------------------------------------------------------------- classes
 # All nine Dynamic World classes, none merged (since 6 Nov 2026; before that,
 # shrub was folded into grass and flooded vegetation and snow were dropped).
-# Ids 1-6 kept their old meaning so the hand masks and the annotator stay
-# valid; the three restored classes come after them as 7-9.
+# Ids 1-6 kept their old meaning; the three restored classes come after
+# them as 7-9.
 CLASSES = {
     0: "nodata",
     1: "water",
@@ -337,8 +337,8 @@ DW_MIN_PURITY = 0.6     # and the winning class must hold 60% of those
 #
 # Measured before choosing 0.40: it catches 99.1% of Mongolia's false cropland
 # and under 1% of the real cropland in Iowa, Pampas, Punjab and the Nile Delta.
-# These are the same thresholds check_labels.py applies to the hand masks
-# (cropland >= 0.40, grass >= 0.15), so machine labels meet the same standard.
+# These are the same thresholds check_labels.py checks every mask against
+# (cropland >= 0.40, grass >= 0.15).
 #
 # "Peak" is the 85th percentile of the monthly NDVI, not the maximum: one month
 # brightened by thin cloud would otherwise decide it.

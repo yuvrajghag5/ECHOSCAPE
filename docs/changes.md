@@ -1034,12 +1034,205 @@ Checked without training: notebooks differ only in `MODEL`, every cell
 compiles, the schedule reaches 3.5e-6 at epoch 40, the averaged weights load
 into a plain network (as the prototype needs) and survive a resume.
 
+## 7. Nine classes, stable recipe: the results — 6 November 2026
+
+The three notebooks were renamed when they were run: `01_train_unet`,
+`02_train_deeplab`, `03_train_seg`; the monthly-change notebook is now
+`04_monthly_change`.
+
+**The curves are clean now.** Training loss falls smoothly in all three. The
+averaged-weights validation score climbs and then flattens: SegFormer from
+epoch ~22, DeepLab from ~30, U-Net peaks at 27 and slowly slides back. The
+first epochs score near zero only because the weight average still holds the
+random starting weights. It forgets them within ~3 epochs.
+
+| | best epoch | val mIoU (9) | test mIoU (9) | val, 6 main | test, 6 main | test accuracy |
+|---|---|---|---|---|---|---|
+| U-Net | 27 | 42.1% | 31.1% | 62.1% | 46.6% | 65.0% |
+| DeepLabV3+ | 32 | 49.0% | 30.3% | 72.9% | 45.2% | 64.1% |
+| **SegFormer** | 40 | **51.3%** | 31.1% | **75.5%** | 46.6% | 66.7% |
+
+"6 main" is the mean over water, built-up, trees, cropland, grass and bare
+only: the classes the earlier runs had. It is the like-for-like comparison.
+
+**What the numbers say.**
+
+- **The headline dropped from ~48% to ~31%, but the model did not get worse.**
+  On the six classes the old runs had, test is 45-47%. That is the same as
+  the early-stopping runs (43.9-47.9%). The three restored classes score
+  close to zero: shrub 0.0-0.2%, flooded vegetation 0-1.6%, snow 0%. Each
+  still counts as one ninth of the mean. They are 0.1-0.4% of the pixels,
+  too few to learn from (Phase 3 §11 predicted this).
+- **Not better, but now trustworthy.** The run-to-run lottery is gone. The
+  best epoch sits on a plateau, not a spike. The ranking on validation is
+  SegFormer > DeepLab > U-Net, and on test they tie.
+- **Loss keeps falling while validation flattens: the model memorises the 18
+  training regions.** More epochs or a bigger network make that worse, not
+  better. The limit is the data: 18 regions, one-month inputs, labels about
+  75-80% right.
+- **Validation is easy and test is hard.** 75.5% against 46.6% on the same
+  six classes. Measured per test region (scratchpad, read only):
+  - **Death Valley** is 17% of all test pixels and 99% bare. Only 19-49% of it
+    is called bare. Rocky slopes and alluvial fans return radar like
+    buildings, trees or ploughed fields. The training deserts are sand: smooth
+    and dark.
+  - **Kansas** is 76% cropland, which is found at 43-50% IoU.
+  - **Ireland** mixes trees, cropland and grass about 40/30/22 and gets each at
+    13-30% IoU.
+  - **Congo** forest (98%) and **Tokyo** city (96%) are near perfect.
+- **The confusion is where the radar is weakest.** 52-72% of all test errors
+  are inside the four classes trees / cropland / grass / bare. The biggest
+  single flows: trees->cropland (5.5-8.1% of all test pixels),
+  bare->built-up or ->cropland (Death Valley), and cropland<->grass. One month
+  of radar sees only roughness and wetness. A field and a meadow look alike
+  in most months; they differ in how they change over the year.
+
+**Two free improvements, measured on the trained weights (no retraining).**
+
+| test, 6 main classes | one month | 12 months averaged |
+|---|---|---|
+| SegFormer alone | 46.6% | 48.9% |
+| all three models averaged | 47.9% | 48.8% |
+
+The second column averages each tile's predicted probabilities over its 12
+months before picking a class. This gives one yearly map, matching how the
+labels were made. On validation the same step gives 76.5% -> 81.6%. It is the
+evidence for the next step: **the year's sequence holds information that a
+single month lacks.**
+
+## 8. Does longer training help? SegFormer for 60 epochs — 6 November 2026
+
+**Why.** The question was whether more epochs would help. In the 40-epoch runs,
+validation stopped improving well before the end while the loss kept falling:
+
+| validation mIoU | epoch 21 | best | epoch 40 |
+|---|---|---|---|
+| SegFormer | 49.4% | 51.3% (epoch 40) | 51.3% |
+| DeepLab | 30.8% | 49.0% (epoch 32) | 48.4% |
+| U-Net | 31.3% | 42.1% (epoch 27) | 38.9% |
+
+DeepLab and U-Net were already overfitting. SegFormer was the only one whose
+best epoch was its last, so it is the one worth testing. Expected gain: about
+one point on validation and little on test, because the bigger gap is between
+validation (51%) and test (31%), which more epochs do not close.
+
+**The run.** `notebooks/05_segformer_60_epochs.ipynb` is a copy of notebook 03.
+Only two things differ: `EPOCHS = 60`, and the run name `segformer60`. Because
+of the name, the 40-epoch weights, results and executed notebook stay
+untouched. Took about 33 min (the 40-epoch run took 22). The app and notebook
+04 pick the best run by validation, so if `segformer60` wins there, both
+switch to it. Notebook 04 then has to be rerun to give it a noise floor.
+
+**Result.** Pending: run the notebook.
+
+## 9. Does a bigger model help? A larger SegFormer on the datalab — 8 November 2026
+
+**Why.** All three networks were about 2 M parameters, so they would fit the
+4 GB laptop card. The university datalab has an A6000 (48 GB), so size is no
+longer the limit. The question is whether the model is too small, or whether
+the data sets the limit.
+
+**The run.** `notebooks/06_segformer_big.ipynb` is a copy of notebook 05.
+Only the encoder changes: it is shaped like MiT-B2, the SegFormer paper's
+mid-size encoder (widths 64/128/320/512, depths 3/4/6/3, decoder 768).
+That is 27.4 M parameters instead of 2.3 M, about 12x. It is still trained
+from scratch. Data, loss, augmentation, weight averaging and the 60 epochs
+are as in notebook 05, so the gap to `segformer60` is model size alone.
+Saved as `segformer_big`. `build_model` stores the size with the weights,
+and the prototype rebuilds the network from that, so it can load this run
+unchanged.
+
+**Datalab setting, both notebooks 05 and 06.** `WORKERS = 4` loads tiles in
+4 parallel processes. With 0, a small network waits on the disk more than it
+computes. Each worker starts with a copy of the same random generator, so
+without a fix all four would flip, turn and add speckle in lockstep.
+`fresh_dice` reseeds each worker's generator. On Windows set `WORKERS = 0`.
+There, notebook-defined datasets cannot be handed to worker processes.
+
+**Expectation.** Small at most. The validation curves were already flat,
+and the bigger gap is validation 51% vs test 31%, i.e. new regions. A larger
+model fits the training regions more closely, which can widen that gap.
+Either outcome is a finding: a gain means the small networks were holding
+the scores back; no gain means the data is.
+
+**Result.** Pending: run the notebook.
+
 ---
 # Phase 6 — Evaluation
 
 ## 1. Initial build
 
+### How the land changed over 12 months — 6 November 2026
+
+**The ask.** Show the professor what changed over the year, in percent: e.g.
+cropland covering 20% of a region in January and 60% in July.
+
+**The method** (`notebooks/04_monthly_change.ipynb`). The best run, chosen on
+validation, maps all 12 months of every test region from radar alone - tiles
+overlapping by half, probabilities averaged so there are no seams. The class
+shares are counted only over ground the radar saw in **all** 12 months, so each
+month is measured on the same area. Then: a monthly table and chart, a
+seasonal table (three-month averages, hemisphere-aware), the biggest swing per
+class, and maps of January / April / July / October.
+
+**Measured before building it**, with the archived 6-class U-Net (read only):
+Kansas, a test region, goes cropland 22% (Jan) -> 64% (Jun-Jul) -> 8% (Dec),
+grass the mirror image; the Mekong's water doubles in October, its flood
+season. Training regions stay flat (Iowa 81-93% cropland all year): the model
+memorised their yearly label - which is why only test regions are used.
+
+**Three things keep it honest:**
+
+- **What a change means.** The labels are yearly, so the model never saw a
+  "winter field" label. A field reported as grass in December is a harvested
+  field that *looks* like grass to the radar. The numbers are land cover as the
+  radar sees it that month, not a change of land use - say so with them.
+- **A noise floor.** A city cannot grow or vanish in a year, so the swing of
+  the built-up share (median over test regions with >=5% built-up) is the
+  model's own wobble - Mannheim's alone is 8 points. A swing under the floor is
+  reported as no measurable change; over twice the floor as clear.
+- **An independent check.** `labelling/gee/export_dw_monthly.js` exports
+  Dynamic World's own class shares per month (mean probabilities per month,
+  winner per pixel, counted at 50 m) - a few-kB CSV, not images. The notebook
+  puts the radar curve beside the optical one and reports whether they rise and
+  fall together (correlation of the two curves, only where both move by more
+  than the noise). Months where Dynamic World saw under half the box (clouds)
+  are left out of the check - and are exactly where the radar is worth having.
+
+Checked without a trained 9-class model: a stand-in (the archived U-Net's
+weights in a 10-output head) and a made-up CSV ran every cell, reproduced the
+Kansas numbers above to the decimal, and drew all three figures.
+
+### First real run — 6 November 2026
+
+Run with SegFormer (best on validation, 51.3%). Every test region was measured
+on 95-100% of its box. Noise floor: **7.5 points**.
+
+| region | what moved over 2021 | verdict |
+|---|---|---|
+| Ireland | cropland 88% (Dec-Feb) -> 32% (Jul); grass 1% (Feb) -> 55% (Jul), its mirror image | clear |
+| Kansas | grass 24% (Feb) -> 66% (Dec); cropland 54% (Feb) -> 19% (Dec); bare 16% in Jan-Feb, 0% Apr-Oct | clear |
+| Mannheim | cropland 20% (Dec) -> 41% (Sep); trees 10% (Feb) -> 26% (Apr); shrub 8-11% in winter, under 1% in summer | clear |
+| Lake Geneva | cropland 21% (Apr) -> 33% (Sep) | just above the floor |
+| Congo, Tokyo | nothing beyond 4.3 points: rainforest and city hold still | no change |
+
 ## 2. Issues faced
+
+- **Death Valley's "built-up" is not a city.** Its predicted built-up share
+  swings 23% -> 41% over the year, but the label has 0.1% built-up. These are
+  rocky desert slopes that the radar reads as buildings (Phase 5 §7). The
+  noise floor selects its regions by the *predicted* built-up share, so this
+  false city was used as a reference. Without Death Valley, the median swing
+  of the real cities (Tokyo 1.5, Lake Geneva 3.7, Mannheim 11.3) is
+  **3.7 points**, not 7.5.
+- **Most of the "change" is the season, not a change of land use.** Irish
+  pasture is called cropland in winter (wet, bare-looking soil) and grass in
+  summer. The Kansas bare share in Jan-Feb is most likely frozen ground: ice
+  changes how soil reflects radar. Mannheim's winter "shrub" is bare winter
+  fields. The radar measures what the ground looks like that month. This is
+  the honest way to present it.
+- **The Dynamic World check has not run yet.** `outputs/dw_monthly_2021.csv`
+  is missing; `export_dw_monthly.js` must be run in Earth Engine first.
 
 ## 3. How it was solved
 
@@ -1049,7 +1242,88 @@ into a plain network (as the prototype needs) and survive a resume.
 
 ## 1. Initial build
 
+### The web page — 6 November 2026
+
+**What it does.** Pick any point on the map (or a listed place), a box size
+(10 / 20 / 30 km) and a first month (Jan 2017 up to 12 months before today).
+Then press **Map 12 months**.
+
+1. **Search.** The Sentinel-1 catalogue is searched for those 12 months.
+2. **Track and download.** One orbit track is chosen with `fetch_s1.choose_track`.
+   Every pass is downloaded, already cropped to the box at 50 m (4 at a time),
+   with `fetch_s1.download_window`.
+3. **Composite.** Passes are combined into a monthly median and saved with
+   `fetch_s1.write_geotiff`.
+4. **Same preprocessing.** Each month is read back with
+   `build_dataset.radar_channels`, the exact scaling the model trained on.
+   No preprocessing is written twice (`architecture.md`).
+5. **Model.** The best model by validation (SegFormer, 51.3%) maps each month,
+   with tiles overlapping by half and averaged, as in notebook 04.
+6. **Year map.** A thirteenth map averages each pixel's probabilities over the
+   12 months. This is the step that scored best on the test regions
+   (Phase 5 §7).
+7. **Shares.** Each class's share is counted only over ground the radar saw in
+   all 12 months, so partly covered months cannot invent change.
+
+**The page** (`app/static/`, designed with the frontend-design skill):
+
+- **Colours.** Neutral fog-grey chrome, so Dynamic World's own colours carry
+  the meaning. One signal colour, magenta, marks "now" everywhere: the
+  current month, progress, focus.
+- **Map.** A Leaflet map with every training / validation / test region drawn
+  dashed. Moving the box says at once whether the model has seen that ground.
+- **Month strip.** Shows the passes per month, plus a play button.
+- **The signature: a year dial** shaped like a radar scope. Twelve sectors,
+  one per month, each split into rings by class share (area-true). A magenta
+  sweep turns while the radar downloads, filling a sector as each month
+  arrives. Then it plays the year: the map, the shares, the change since last
+  month and the sparklines follow the sweep.
+- **Panel.** Below the dial: the biggest swings over the year, judged against
+  the model's own wobble (notebook 04's noise floor). Then the checks: seen
+  before or not, passes per month, share of the box measured, model
+  confidence, and what the score means.
+
+**Checked without running the app** (he runs it): Python compiles, the
+JavaScript parses, and a static mock of the page was clicked through in a
+browser. The mock used real Mannheim radar and labels from disk and notebook
+04's Mannheim shares; the progress, dial, playback, layers and phone layout
+all worked. The live path (catalogue -> download -> model) has not run yet.
+
 ## 2. Issues faced
+
+- **CARTO's base-map tiles now require an API key** (seen in the mock).
+  Switched to Esri's keyless light-grey canvas.
+- Streamlit, the planned framework, was not installed. FastAPI was
+  (`tech.md`).
+
+### Simplified after his first live run — 6 November 2026
+
+**His first live run worked:** a box near Mannheim, Feb 2022 - Jan 2023, in 20
+seconds, with 2-3 passes a month (Sentinel-1B had failed by then). It came out
+about 42% built-up and 50% cropland.
+
+**His verdict:** the dial, the play button and the look are right, but the
+middle is too complicated. The base map, the photo mode, the Land cover /
+Radar input / Whole year switch, opacity and box size are not needed. The page
+should take a latitude, a longitude and the 12 months, then show the radar
+picture of each month with its land-cover map.
+
+- **The map is gone,** and Leaflet and Esri with it. The page now loads
+  nothing from outside except its fonts.
+- **Two square frames, side by side.** On the left is the month's radar, as a
+  plain greyscale picture: VV, on the same fixed decibel scale the model
+  reads. It used to be a false-colour mix of the three input channels. On the
+  right is the land-cover map predicted from that radar. The month buttons
+  and Play swap both together. A magenta scan line crosses the empty frames
+  while the radar downloads.
+- **Box size fixed at 20 km.** The "whole year" map is no longer drawn (its
+  shares are still in `result.json`).
+- **Old caches are redrawn, not re-downloaded.** `result.json` records a
+  `pictures` version. A cache from the first version keeps its radar GeoTIFFs
+  and only re-runs the model and redraws the PNGs.
+
+Checked again on the scratchpad mock (real Mannheim radar): the frames, the
+captions and Play stepping both pictures all work.
 
 ## 3. How it was solved
 

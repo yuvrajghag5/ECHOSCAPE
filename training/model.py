@@ -72,8 +72,7 @@ class UNet(nn.Module):
     skip connections hand that detail back on the way up, so the output can be
     both context-aware and sharp at the edges.
 
-    base 16 = 1.94 M parameters (the size design.md specifies); base 32 = 7.76 M,
-    which overfitted within six epochs on the hand labels.
+    base 16 = 1.94 M parameters (the size design.md specifies); base 32 = 7.76 M.
     """
 
     def __init__(self, in_channels=3, classes=10, base=32):

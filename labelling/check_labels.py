@@ -38,8 +38,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import config
 
-# Ignore anything smaller than this. Single stray pixels are the erase key's
-# leftovers, not an opinion about the landscape.
+# Ignore anything smaller than this. Single stray pixels are leftovers of the
+# 10 m -> 50 m vote, not an opinion about the landscape.
 MIN_ZONE_PX = 50
 
 # What the yearly PEAK greenness should look like for each class. Deliberately
@@ -181,8 +181,7 @@ def check_one(aoi):
     if UNDECIDABLE <= set(np.unique(mask)):
         print("\n  NOTE: this mask uses both bare and built-up. No optical index")
         print("        separates those two - desert and dry city overlap almost")
-        print("        exactly. Those zones need a human looking for structure:")
-        print("        straight edges, a street grid, roads leading somewhere.")
+        print("        exactly, so this check cannot judge those zones.")
     return True
 
 

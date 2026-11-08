@@ -17,7 +17,7 @@ written down next to the choice.
 | Region checks | ESA WorldCover 2021, via Planetary Computer | 2c |
 | Deep learning | PyTorch — **U-Net written from scratch** | 5, 6 |
 | Pretrained comparison only | segmentation_models_pytorch | 5 |
-| Web prototype | Streamlit + streamlit-folium | 7 |
+| Web prototype | FastAPI + uvicorn, hand-written page | 7 |
 | Plots | matplotlib | all |
 | Notebooks | Jupyter | 8 |
 
@@ -88,20 +88,6 @@ The data API accepts a bounding box and an output size and returns a correctly
 georeferenced GeoTIFF. This is the single biggest practical decision in the
 project — it is the difference between a feasible and an infeasible download.
 
-## Random Forest for label generation
-
-> **Superseded.** Never used for labels; later the per-pixel baseline, and
-> dropped on 5 November along with it. Kept as the record.
-
-Not deep learning. A Random Forest on Sentinel-2 spectral bands is:
-
-- fast to train on a few hundred hand-labelled examples
-- not prone to overfitting on small data the way a neural network is
-- able to report a confidence per pixel, so uncertain pixels can be dropped
-- easy to explain in a report
-
-Its job is to extend human labels across an area, not to be the final model.
-
 ## PyTorch + segmentation_models_pytorch
 
 **The main model is written from scratch in plain PyTorch**, not imported from a
@@ -154,6 +140,12 @@ input obvious on the screen recording.
 The alternative, FastAPI plus a hand-written front end, would be more work for no
 extra marks here.
 
+**Changed 6 November 2026: FastAPI and a hand-written page instead.** Streamlit
+was never installed, and FastAPI and uvicorn already were. The page also had
+to animate the year as it plays, which Streamlit's rerun-on-every-click model
+does poorly. Only the fonts come from a public CDN. The app needs the internet
+anyway, to fetch the radar. No service it uses needs an API key.
+
 ## Hardware
 
 RTX 3050 with 4 GB. Low by modern standards, but after downsampling to 50 m the
@@ -178,7 +170,6 @@ everything runs locally and reproducibly.
 | numpy, rasterio, requests, matplotlib | installed | everything |
 | scipy | installed | region growing, zone analysis in `check_labels.py` |
 | scikit-learn | installed | unused since 5 Nov, when the baseline was dropped |
-| fastapi, uvicorn | installed | the labelling annotator |
 | **torch (CUDA)** | **not installed** | Phase 5 U-Net — a ~2.5 GB download |
 | segmentation_models_pytorch | not installed | experiment 2 only |
 | jupyter, ipykernel | not installed | running the submitted notebooks |
@@ -191,25 +182,6 @@ is far too slow to notice until training.
 .venv\Scripts\python.exe -m pip install torch --index-url https://download.pytorch.org/whl/cu121
 .venv\Scripts\python.exe -m pip install jupyter ipykernel
 ```
-
-## The Random Forest has two separate jobs
-
-> **Superseded on 5 November:** both jobs were dropped. Kept as the record.
-
-Worth separating, because they are easy to confuse:
-
-1. **Phase 5, experiment 1 — the baseline.** Classifies each pixel from
-   `[VV, VH, VV-VH]` with no spatial context at all. Its score is the control
-   the U-Net is measured against: the gap between them is what seeing a
-   neighbourhood is worth. **This is built and run** — 45.3% mean IoU on unseen
-   regions.
-2. **Phase 3, a fallback for extending labels.** Training a forest on the hand
-   labels to propose more. **Not used.** Every label in the dataset is
-   hand-made. `prelabel.py` was written and validated (it agreed with the
-   hand labels on 429,069 pixels against 283 conflicts), never applied, and
-   removed on 3 November once external labels were approved — see
-   `changes.md`.
-
 
 ---
 
@@ -273,4 +245,4 @@ export has to be made to fit a grid it knows nothing about.
 | nearest-neighbour onto an exact 5x-finer copy of the radar grid | `import_labels.py` | Makes the final grid identical to the radar's by construction. Nearest, not averaging — these are class codes. |
 | drop 10 m pixels under 0.35 confidence | `import_labels.py` | Dynamic World's own advice. Kept moderate, because it warns crops and arid ground score low — two of our classes, four of our regions. |
 | vote in 5 x 5 blocks: >= 50% usable, winner >= 60% | `import_labels.py` | Refuses mixed pixels — field edges, shorelines — which is where external labels are most often wrong. |
-| **cropland must green up**: "cropland" whose yearly peak NDVI stays under 0.40 becomes grass (or bare) | `import_labels.py` | Dynamic World labelled the Mongolian steppe 46% cropland at a peak of 0.23; real cropland peaks at 0.71–0.81. The rule catches 99% of that and under 1% of real cropland. Same thresholds the hand masks are held to. |
+| **cropland must green up**: "cropland" whose yearly peak NDVI stays under 0.40 becomes grass (or bare) | `import_labels.py` | Dynamic World labelled the Mongolian steppe 46% cropland at a peak of 0.23; real cropland peaks at 0.71–0.81. The rule catches 99% of that and under 1% of real cropland. |

@@ -154,7 +154,7 @@ def build(aoi, dry_run, rows):
         month = config.month_of(month_path)
 
         # A pixel no satellite saw teaches nothing, so it is unlabelled here
-        # regardless of what the human drew on it.
+        # regardless of what the label says.
         labels = np.where(seen, mask, 0).astype("uint8")
 
         for row in row_starts:

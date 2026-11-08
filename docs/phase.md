@@ -22,10 +22,10 @@ time.
 | 2b. Data evaluation | What the radar alone can tell us, before labelling | **dropped** |
 | 2c. Global area selection | Which places the model will know | **done** — 19 regions |
 | 3. Labelling | Dynamic World masks | **done** — 31 regions; **6 Nov: all 9 Dynamic World classes kept**, re-import needed |
-| 4. Dataset assembly | Training tiles and splits | rebuild for 9 classes (was 5,400 / 1,800 / ~2,100) |
-| 5. Training | Trained model weights | three models written and compared once (6 classes); retrain all three on 9 classes, on the data-lab GPU |
-| 6. Evaluation | Honest accuracy numbers | not started |
-| 7. Prototype | The web page | not started |
+| 4. Dataset assembly | Training tiles and splits | **done** — 9 classes |
+| 5. Training | Trained model weights | **done 6 Nov** — 9 classes, stable recipe; SegFormer best on validation 51.3%, test ~31% (9) / ~47% (6 main) |
+| 6. Evaluation | Honest accuracy numbers | monthly change run (SegFormer); Dynamic World check and noise-floor fix pending |
+| 7. Prototype | The web page | **built 6 Nov** — `app/server.py`; first live runs pending |
 | 8. Submission | Notebooks, README, recording | not started |
 
 *Status as of Friday 6 November 2026. Deadline Sunday 8 November.*
@@ -34,7 +34,7 @@ time.
 
 **Done.** 19 regions with radar, optical and Dynamic World labels (cropland rule
 applied). Code reorganised into packages. Model training moved into notebooks.
-Hand labels archived and the Random Forest dropped. 12 new validation and test
+The Random Forest baseline dropped. 12 new validation and test
 regions chosen by measurement and added to `config.py`; the Earth Engine script
 exports only those 12.
 
@@ -49,15 +49,27 @@ exports only those 12.
 2. `labelling\import_labels.py`, `labelling\check_labels.py`, then
    `training\build_dataset.py` to rebuild the tiles (the old ones were deleted).
 3. ~~Write DeepLabV3+ and SegFormer~~ — **done 5 Nov**, in `training/model.py`;
-   one notebook per model (`02_train_unet`, `02_train_deeplab`, `02_train_seg`).
+   one notebook per model (`01_train_unet`, `02_train_deeplab`, `03_train_seg`).
    First comparison (early stopping): test 47.9 / 43.9 / 47.7%, unstable.
    **6 Nov: retrain all three** with the stabilised recipe - 40 full epochs,
    weight averaging, warm-up, clipping, fixed overfit test (`changes.md` Phase 5 §6).
 4. **6 Nov: all nine Dynamic World classes kept** (`changes.md` Phase 3 §11):
    re-run `import_labels.py` and `build_dataset.py`, then retrain all three.
+   **Done 6 Nov** - results in `changes.md` Phase 5 §7.
+   Optional check: `notebooks/05_segformer_60_epochs.ipynb` (SegFormer, 60 epochs,
+   run `segformer60`) - does longer training help? (`changes.md` Phase 5 §8).
+   And `notebooks/06_segformer_big.ipynb` (27.4 M-parameter SegFormer, run
+   `segformer_big`, on the datalab A6000) - does a bigger model help? (§9).
    Code pushed to GitHub; tiles go to the university data lab separately
    (they are ~700 MB and stay out of git), training runs there.
-5. Build the prototype (`app/`, Phase 7) and record the Mannheim screen capture.
+5. **How the land changed over the year** - `notebooks/04_monthly_change.ipynb`
+   (written 6 Nov, `changes.md` Phase 6 §1): run after training. First
+   `labelling/gee/export_dw_monthly.js` in Earth Engine for the check.
+   **Run 6 Nov** with SegFormer (`changes.md` Phase 6). Still open: the
+   Dynamic World CSV, and choosing the noise-floor regions by the label, not
+   the prediction (Death Valley's false city sets it at 7.5 instead of 3.7).
+6. ~~Build the prototype~~ - **built 6 Nov** (`app/`, `changes.md` Phase 7). Next: run it
+   on Mannheim and a few never-seen places, then record the Mannheim screen capture.
 
 The full account of every decision and what broke is in `changes.md`.
 
@@ -236,95 +248,19 @@ down, and the data is on disk.
 
 ---
 
-## Phase 3 — Labelling
+## Phase 3 — Labelling ✅
 
-> **Changed on 3 November 2026.** The professor confirmed that an existing
-> labelled dataset is acceptable and that self-labelling is not graded. Training
-> labels now come from an external land-cover product; the hand masks below
-> become the **independent test set** and are never trained on. See "Revised
-> plan" at the end of this phase. Everything above that block is the original
-> plan, kept as the record of how the project got here.
+**Source.** Google Dynamic World V1, 2021, for every region - training,
+validation and test alike. The professor confirmed on 3 November that an
+existing labelled dataset is acceptable. Exported from Earth Engine by
+`labelling/gee/export_dynamic_world.js`, put on the radar grid by
+`import_labels.py`, checked by `check_labels.py`. Why this source over io-lulc
+and WorldCover is in `tech.md`.
 
-**Goal.** Real, human-made land-cover masks. This is the phase the professor
-explicitly asked for: *find data and label it yourself if it is unlabelled.*
-
-**Approach.** Label **regions, not points**. Open the colour image, click inside a
-field or a forest block, have an assisting model outline that whole region, then
-assign it a class. A few hundred clicks produces a dense per-pixel mask.
-
-Semantic segmentation needs a class for **every pixel**, so scattered dots are not
-enough on their own.
-
-**Classes (6 plus nodata).** water, built-up, trees, cropland, grass / low
-vegetation, bare / sparse.
-
-**Tooling.** The annotation tool being built for the AI Vision course. A crude
-fallback script must exist first so this phase cannot block on that tool.
-
-**Two separate label sets are required:**
-1. **Training masks** — the bulk, over most areas.
-2. **A test set** — a different area, labelled independently, never used in
-   training. Without it every accuracy number is circular.
-
-**Output.** `data/labels/<area>/...` — single-layer GeoTIFFs, same grid, values 0–6.
-
-**Done when.** Training masks exist for at least two areas, a test mask exists for
-a third, and all align with the radar.
-
-**Time-box this phase.** It is required — the professor asked for self-made labels
-— but it is not what a Deep Learning course grades. Labelling can absorb unlimited
-time, and every hour spent perfecting masks is an hour not spent on the model
-experiments in Phase 5, which is where the marks are. Label enough area to train
-on, keep the quality honest, and move on. If more training data turns out to be
-needed, the Random Forest can extend coverage — declared plainly in the report.
-
-### Status, 29 October 2026 — 14 of 19 regions
-
-2.8 M labelled pixels. Masks: amazon, arabia, atacama, cairo, delhi,
-egypt_desert, finland, ijsselmeer, iowa, kenya, mannheim, mekong, nsw, oregon.
-All verified on the radar grid by `check_labels.py`.
-
-| Class | Labelled px | Share |
-|---|---|---|
-| bare / sparse | 779,241 | 27.7% |
-| trees | 649,908 | 23.1% |
-| built-up | 626,398 | 22.3% |
-| water | 487,970 | 17.4% |
-| cropland | 264,527 | 9.4% |
-| **grass / low vegetation** | **2,037** | **0.1%** |
-
-**The grass class is the one real gap.** 2,037 pixels against bare's 779,241
-cannot be learned, and class weighting does not rescue a class that is barely
-present. Mongolia is 97% grass and unlabelled; NSW and Kenya were labelled
-without it. Until one of those is done, expect grass IoU near zero, and report
-it as a data result rather than a model one.
-
-**Mistakes caught and fixed**, all by `check_labels.py` and the annual-NDVI
-check. Worth recording because each was invisible to the eye:
-
-- **Arabia** — 26,612 px of desert labelled built-up. No optical index
-  separates bare from built-up (desert NDBI 0.08-0.16, built-up 0.06-0.15), so
-  that pair always needs a human looking for street-grid structure. Cleared and
-  redone.
-- **Finland** — 41,167 px of built-up that was **snow lying on boreal forest**:
-  January NDVI 0.02 at 5.8x the summer brightness, July NDVI 0.71. The tool's
-  own legend said built-up "looks pale, cyan, white", and so does snow. Cleared
-  and redone. **Never label a snowy region from a winter month.**
-- **Delhi** — 5,071 px of "water" on the Yamuna's farmed floodplain, only 18%
-  of it overlapping real water. The deeper cause was the month: the clearest
-  month shows 132 water pixels, September shows 8,487. **Pick the month for the
-  feature being labelled, not once per region.**
-- **Amazon** — doubted on its percentages (27% water, 25% built-up in a
-  rainforest), then confirmed correct: the region is **Manaus**. Check the place
-  before doubting the labels.
-
-
----
-
-### Revised again, 5 November 2026 — Dynamic World only
-
-**Every label is Dynamic World; the hand labels are archived** in
-`data/archive/hand_labels/`, out of the pipeline but not deleted.
+**Classes.** All nine of Dynamic World's, none merged (since 6 November):
+water, built-up, trees, cropland, grass, bare, shrub & scrub, flooded
+vegetation, snow & ice. Output `data/labels/<area>/<area>_labels.tif`, values
+0-9, 0 = unlabelled.
 
 | split | regions |
 |---|---|
@@ -332,56 +268,20 @@ check. Worth recording because each was invisible to the eye:
 | validation | one per class: chesapeake, paris, black_forest, beauce, serengeti, namib |
 | test | one per class: lake_geneva, tokyo, congo, kansas, ireland, death_valley — plus mannheim |
 
-The 12 new regions were **measured before download**: Sentinel-1 in all 12
-months of 2021 on one orbit track, and ESA WorldCover 2021 confirming the
-class dominates the box. *That measured time, not space* — a track with images
-every month, not one covering the box. The download showed the gap: see
-`changes.md` §9. That rejected two picks that sounded right — a
-"steppe" box that was 81% lake, and a Lake Victoria box with no shoreline.
-Kansas sits in test deliberately: 61% cropland and 29% grass, it scores the
-model on the pair radar finds hardest. Mannheim is test so the screen
-recording shows a city the model never trained on.
+**Rule:** a region is train or test, never both.
 
-**Consequence:** with no hand labels, every score is agreement with Dynamic
-World, not with ground truth.
+The 12 validation and test regions were **measured before download**: Sentinel-1
+in all 12 months of 2021 on one orbit track, and ESA WorldCover 2021 confirming
+the class dominates the box. *That measured time, not space* — a track with
+images every month, not one covering the box. The download showed the gap: see
+`changes.md` §9. That rejected two picks that sounded right — a "steppe" box
+that was 81% lake, and a Lake Victoria box with no shoreline. Kansas sits in
+test deliberately: 61% cropland and 29% grass, it scores the model on the pair
+radar finds hardest. Mannheim is test so the screen recording shows a city the
+model never trained on.
 
-### Revised plan, 3 November 2026
-
-> **Superseded on 5 November 2026.** The hand labels were then archived and
-> the Random Forest baseline dropped; every label is Dynamic World, and
-> validation and test use new regions, one dominated by each class. Kept
-> below as the record of how the project got there.
-
-**Train on external labels, test on hand labels.**
-
-| | Source | Used for |
-|---|---|---|
-| `data/labels_external/` 🔜 | Dynamic World, 10 m → 50 m by majority vote | training |
-| `data/labels/` ✅ | 14 regions labelled by hand | **validation and testing** |
-
-**Why the swap.** Hand labelling hit three limits that more clicking could not
-fix in the time left: grass at 2,037 px (unlearnable), 41% of each tile
-unlabelled, and overfitting after ~6 epochs on only ~233 distinct pieces of
-ground. External labels solve the first two and make the third cheap.
-
-**Why the hand labels go to the test side, not the bin.** Testing on external
-labels would only measure how well radar copies another model. Testing on hand
-labels measures agreement with careful human judgement the model never saw.
-
-**Rule:** a region is train or test, never both, whatever labels it carries.
-
-**Source: Google Dynamic World V1**, chosen 3 November over Impact Observatory
-io-lulc and ESA WorldCover (compared in `tech.md`). Exported from Earth Engine
-by `labelling/gee/export_dynamic_world.js`, imported by `import_labels.py`.
-
-**Test split changed:** mongolia left `TEST_AOIS`. The test set is now scored
-against hand labels and mongolia has none, so it could not be scored — and it
-is ~97% grass, the one class the hand labels barely cover.
-
-**Done when.** External masks exist for every training region on the radar
-grid; an agreement report compares them with the hand masks; the U-Net is
-retrained on them and scored on the hand-labelled test regions alongside the
-hand-trained model.
+**Consequence:** every score is agreement with Dynamic World, not with ground
+truth.
 
 ---
 
@@ -502,51 +402,13 @@ extra months are context, not a change in what is predicted.
 physically sensible — water and built-up well above the vegetation classes — and
 all three experiments have numbers.
 
-### Status — experiment 1 done, 29 October 2026
+### Results
 
-**Random Forest baseline** (notebook 01), per pixel, no spatial context:
-
-| | Validation | Test (unseen regions) |
-|---|---|---|
-| mean IoU | 30.6% | **45.3%** |
-| accuracy | 51.7% | 61.2% |
-
-Per class on test: water **83.5%**, trees 58.3%, built-up 31.1%, cropland 8.4%.
-Grass and bare do not occur in the test regions and are excluded from the mean.
-
-Three findings already worth reporting:
-
-- **Water at 83.5%, from three numbers per pixel**, confirms the project's
-  premise. Radar sees water as a mirror — measured at IJsselmeer, VV reads
-  -16.7 dB over water against -8.8 dB over land.
-- **Cropland fails at 8.4%**, mistaken for trees 47% of the time. Measured
-  cause: Iowa cropland swings 6.7 dB across the year while genuinely bare
-  ground swings 1.0 dB, and in August the two are indistinguishable. No
-  single-month model can resolve that — which is the physical justification for
-  experiment 3, stronger than the one written above it.
-- **Built-up is mistaken for trees 43% of the time.** Buildings double-bounce
-  off wall and ground, canopies volume-scatter; both return bright and rough. A
-  genuine limitation of radar, not of the model.
-
-**Compare like with like.** An earlier version of this section said "the U-Net
-must beat 45.3%" — but 45.3% is the forest's *test* score, while the U-Net's
-52.9% is a *validation* score: two different pairs of regions. On the same
-regions the gap is far larger than first reported:
-
-| validation (mannheim, atacama) | mean IoU |
-|---|---|
-| Random Forest, per pixel | 30.6% |
-| U-Net, base 16 | **52.9%** |
-| **gap — what spatial context is worth** | **~22 points** |
-
-The U-Net has no test score yet: `train.py` only scored validation until
-3 November. It now reports both, and every model in the comparison must be
-quoted on the **test** split. Both figures above predate the Oregon relabel and
-the move to external training labels, so they are re-run as part of that.
-
-The notebooks in `notebooks/` run this and the U-Net with plots, importing the
-same modules the scripts use so the two cannot drift apart.
-
+The runs, their scores and what changed between them are in `changes.md`, Phase 5
+§4-§7. Final (6 Nov, 9 classes): SegFormer 51.3% validation; on test all three
+reach ~31% over nine classes and 45-47% over the six main ones. The three
+restored classes score near zero (too few pixels). The "done when" holds: loss falls,
+validation plateaus, and water and built-up score far above the vegetation classes.
 
 ---
 
@@ -557,8 +419,8 @@ fails.
 
 **What it reports.**
 
-- **Per-class IoU** on the held-out area, against the independently hand-labelled
-  test set — never against the labels used for training.
+- **Per-class IoU** on the test regions, which the model never trained on —
+  scored against Dynamic World.
 - **A confusion matrix**, which should show the cropland/grass confusion
   explicitly rather than burying it in a mean.
 - **The experiment comparison** from Phase 5, as a single table.

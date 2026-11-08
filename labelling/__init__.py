@@ -1,1 +1,1 @@
-"""Phase 3: hand masks are checked here; Dynamic World masks are imported here."""
+"""Phase 3: Dynamic World masks are imported and checked here."""
