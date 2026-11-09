@@ -14,28 +14,38 @@ Google Dynamic World, built from Sentinel-2 — and is then thrown away.
 
 | Stage | State |
 |---|---|
-| 1. Download radar (Sentinel-1) | **done** — 31 regions |
-| 2. Download colour (Sentinel-2), alignment checked | same |
-| 2c. Choose regions worldwide | **done** — 31 regions: 18 train, 6 validation, 7 test |
-| 3. Labels | **Dynamic World** for every region, all nine of its classes |
-| 4. Assemble the dataset | **done** — nine classes |
-| 5. Train | **done** — three architectures from scratch; SegFormer best on validation (51.3%), all three tie on test (~31% over 9 classes, ~47% over the 6 main ones); a 12x bigger SegFormer (27 M parameters) gains nothing on validation (51.1%) and +2.4 on test, so the data, not model size, is the limit |
-| 6. Evaluate | monthly change run on the 7 test regions; Dynamic World check pending |
-| 7. Prototype | **built** — `app/`, a web page: any point on Earth, any 12 months since 2017 |
+| 1. Download radar (Sentinel-1) | **done** — 37 regions, 12 months each |
+| 2. Download colour (Sentinel-2), alignment checked | **done** — used only to build and check labels |
+| 2c. Choose regions worldwide | **done** — 37 regions: 24 train, 6 validation, 7 test |
+| 3. Labels | **done** — Dynamic World, all nine classes, on the radar grid |
+| 4. Assemble the dataset | **done** — 7,164 / 1,800 / 2,100 tiles |
+| 5. Train | **done** — U-Net, DeepLabV3+ and SegFormer from scratch, plus six variants. SegFormer serves the prototype. Longer training and a 12x bigger model both gained nothing; giving the model the whole year gained 24 points on test |
+| 6. Evaluate | **done** — per-class IoU and F1 on test, monthly change on the 7 test regions, and a Mannheim case study checked against ESA WorldCover |
+| 7. Prototype | **done** — `app/`, a web page: any point on Earth, any 12 months since 2017, with a model selector |
+| 8. Submission | **done** — [docs/report.pdf](docs/report.pdf), eight executed notebooks, screen recording |
 
 The labels are machine-made, so every score measures **agreement with Dynamic
 World** — itself 73–84% accurate in published comparisons — not agreement with
 ground truth. Read the numbers in that light.
 
-**Right now:** all 31 regions are downloaded and labelled with all nine Dynamic
-World classes (water, built-up, trees, cropland, grass, bare, shrub & scrub,
-flooded vegetation, snow & ice). U-Net, DeepLabV3+ and SegFormer are written in
-`training/model.py`, one notebook each in `notebooks/` (`01_train_unet`,
-`02_train_deeplab`, `03_train_seg`), all trained the same way: 40 full epochs,
-weight averaging, best epoch kept. All three are trained (results in
-`docs/changes.md`, Phase 5 §7). `notebooks/04_monthly_change.ipynb` then maps
-every month of 2021 and reports how much of each region each class covered,
-month by month.
+**Results.** All numbers below are on the **test** split: seven regions that took
+part in no decision at all. Validation scores higher throughout, and the report
+explains why that gap is the point rather than a problem.
+
+| | overall accuracy | mIoU, 6 main classes | mIoU, 9 classes |
+|---|---|---|---|
+| SegFormer (serves the prototype) | 66.7% | 46.6% | 31.1% |
+| **Best model trained** (`temporal_mstat`) | — | **65.0%** | **43.5%** |
+
+The nine-class mean is much lower than the six-class one because shrub & scrub,
+flooded vegetation and snow & ice score near zero, and each still counts for one
+ninth of the mean. Validation holds 324 snow pixels, so that class cannot be
+measured there at all. Both figures are reported everywhere, never one alone.
+
+U-Net, DeepLabV3+ and SegFormer are written from scratch in `training/model.py`,
+one notebook each, all trained identically: 40 full epochs, weight averaging,
+best epoch kept. `notebooks/04_monthly_change.ipynb` maps every month of 2021 and
+reports how much of each region each class covered, month by month.
 
 | notebook | what it answers |
 |---|---|
@@ -48,6 +58,27 @@ month by month.
 
 Every notebook is committed with its outputs and figures. `docs/phase.md` lists
 the remaining steps.
+
+## What is submitted, and where it is
+
+| Deliverable | Where |
+|---|---|
+| **Report** | [docs/report.pdf](docs/report.pdf) — 20 pages, with the figures taken from the notebooks |
+| **Notebooks, with their outputs** | [notebooks/](notebooks/) — eight, every one committed with its results and figures |
+| **Prototype source** | [app/](app/), plus `acquisition/`, `labelling/`, `training/` |
+| **Setup, dependencies, API keys** | this file, below. No account or API key is needed to run the prototype |
+| **Requirements file** | [requirements.txt](requirements.txt) — 36 pinned packages; torch installs separately, see Setup |
+| **Dataset** | too large for GitHub (several GB): `TODO: paste the download link here` |
+| **Trained weights** | not in the repository: `TODO: paste the download link here` |
+| **Screen recording** | a full run over Mannheim: `TODO: paste the link here` |
+
+The dataset and the weights are delivered separately because GitHub caps a file
+at 100 MB. Everything needed to regenerate the dataset from scratch is in
+`acquisition/` and `labelling/`, and the exact settings are in `config.py`.
+
+To run the prototype you need the weights: put `segformer_best.pt` into
+`weights/` and start the server. The page lists every model whose weights it
+finds, so any subset works.
 
 ## Project layout
 

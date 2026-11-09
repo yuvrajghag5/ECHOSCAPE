@@ -23,12 +23,12 @@ time.
 | 2c. Global area selection | Which places the model will know | **done** — 19 regions |
 | 3. Labelling | Dynamic World masks | **done** — 31 regions; **6 Nov: all 9 Dynamic World classes kept**, re-import needed |
 | 4. Dataset assembly | Training tiles and splits | **done** — 9 classes |
-| 5. Training | Trained model weights | **done 6 Nov** — 9 classes, stable recipe; SegFormer best on validation 51.3%, test ~31% (9) / ~47% (6 main) |
-| 6. Evaluation | Honest accuracy numbers | monthly change run (SegFormer); Dynamic World check and noise-floor fix pending |
-| 7. Prototype | The web page | **built 6 Nov** — `app/server.py`; first live runs pending |
-| 8. Submission | Notebooks, README, recording | not started |
+| 5. Training | Trained model weights | **done** — three architectures plus six variants; SegFormer serves the prototype. `temporal_mstat` is the best model: test 43.5% (9 classes) / 65.0% (6 main) |
+| 6. Evaluation | Honest accuracy numbers | **done** — per-class IoU and F1 on test, monthly change on the 7 test regions, Mannheim checked against ESA WorldCover |
+| 7. Prototype | The web page | **done** — `app/server.py`, with a model selector |
+| 8. Submission | Notebooks, README, recording | **done** — `docs/report.pdf`, eight executed notebooks, screen recording |
 
-*Status as of Friday 6 November 2026. Deadline Sunday 8 November.*
+*Status as of Sunday 9 November 2026.*
 
 ## Where things stand, and what comes next
 
