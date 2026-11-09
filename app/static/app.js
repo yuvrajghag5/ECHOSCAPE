@@ -240,21 +240,6 @@ function renderYear(r) {
   $("noiseNote").textContent = nf
     ? `The wobble is the model's own: on the test regions, built-up land — which cannot appear or vanish in a year — still swings by about ${nf.toFixed(1)} points from month to month. A swing smaller than that is not evidence of change. Much of what does change is the season: a bare winter field can read as grass or cropland.`
     : "";
-
-  const f = r.familiarity, checks = [];
-  if (f.status === "unseen") checks.push(["", "Never seen by the model in training, tuning or testing — this is a genuine test."]);
-  else if (f.status === "training") checks.push(["warn", `Overlaps ${f.region.replace("_", " ")}, a training region: the model memorised this ground's ${f.same_year ? "2021 " : ""}label, so expect flattering, flat results.`]);
-  else checks.push(["", `Overlaps ${f.region.replace("_", " ")}, a ${f.status} region the model never trained on.`]);
-  const passes = Object.values(r.passes), thin = r.months.filter((m) => r.passes[m] <= 1);
-  checks.push([thin.length ? "warn" : "", `${Math.min(...passes)}–${Math.max(...passes)} radar passes per month on orbit track ${r.track.relative_orbit} (${r.track.direction})` +
-    (thin.length ? `; ${thin.map(monthName).join(", ")} rest on one pass, so they are noisier.` : ".")]);
-  checks.push([r.measured_pct < 90 ? "warn" : "", `Shares are counted on the ${r.measured_pct}% of the box the radar saw in all 12 months, so every month is measured on the same ground.`]);
-  if (!r.months.every((m) => m.startsWith("2021"))) checks.push(["warn", "Outside 2021, the year it trained on. After December 2021 Sentinel-1B failed, so months carry fewer passes."]);
-  const conf = r.confidence, lowI = conf.indexOf(Math.min(...conf));
-  checks.push(["", `Model confidence ${(conf.reduce((a, b) => a + b, 0) / 12).toFixed(0)}% on average, lowest in ${monthName(r.months[lowI])} (${conf[lowI].toFixed(0)}%).`]);
-  checks.push(["", `Ran ${r.model.name}, which reads ${r.model.features === "month" ? "one month of radar at a time" : "each month plus the year's mean and deviation"}.`]);
-  if (r.model.test_miou != null) checks.push(["", `Scores mean agreement with Dynamic World: ${(100 * r.model.test_miou).toFixed(0)}% mIoU over ${r.classes.length} classes on unseen test regions.`]);
-  $("checks").innerHTML = checks.map(([c, t]) => `<li class="${c}">${t}</li>`).join("");
 }
 
 /* ------------------------------------------------------------------ play */

@@ -279,9 +279,6 @@ input[type="number"], select {
 .swings .verdict { font: 500 0.7rem/1 var(--mono); text-transform: uppercase; letter-spacing: .04em; }
 .swings .verdict.clear { color: var(--sweep); }
 .swings .verdict.noise { color: var(--graphite); }
-.checks { display: flex; flex-direction: column; gap: 5px; font-size: var(--step--1); color: var(--graphite); margin-top: 2px; }
-.checks li::before { content: "— "; }
-.checks li.warn { color: #8a4b00; }
 .fine { margin-bottom: 18px; }
 .readout h3.eyebrow { margin-top: 4px; }
 
