@@ -252,7 +252,8 @@ function renderYear(r) {
   if (!r.months.every((m) => m.startsWith("2021"))) checks.push(["warn", "Outside 2021, the year it trained on. After December 2021 Sentinel-1B failed, so months carry fewer passes."]);
   const conf = r.confidence, lowI = conf.indexOf(Math.min(...conf));
   checks.push(["", `Model confidence ${(conf.reduce((a, b) => a + b, 0) / 12).toFixed(0)}% on average, lowest in ${monthName(r.months[lowI])} (${conf[lowI].toFixed(0)}%).`]);
-  checks.push(["", `Scores mean agreement with Dynamic World: ${(100 * r.model.test_miou).toFixed(0)}% mIoU over nine classes on unseen test regions.`]);
+  checks.push(["", `Ran ${r.model.name}, which reads ${r.model.features === "month" ? "one month of radar at a time" : "each month plus the year's mean and deviation"}.`]);
+  if (r.model.test_miou != null) checks.push(["", `Scores mean agreement with Dynamic World: ${(100 * r.model.test_miou).toFixed(0)}% mIoU over ${r.classes.length} classes on unseen test regions.`]);
   $("checks").innerHTML = checks.map(([c, t]) => `<li class="${c}">${t}</li>`).join("");
 }
 
@@ -307,7 +308,7 @@ async function run(ev) {
   ev.preventDefault();
   if (busy) return;
   stop();
-  const body = { lat: +$("lat").value, lon: +$("lon").value, start: $("start").value, size_km: SIZE_KM };
+  const body = { lat: +$("lat").value, lon: +$("lon").value, start: $("start").value, size_km: SIZE_KM, model: $("model").value };
   setPoint(body.lat, body.lon);
   busy = true; $("go").disabled = true; $("go").textContent = "Mapping…";
   $("status").hidden = false; $("error").hidden = true;
@@ -396,6 +397,23 @@ $("start").addEventListener("change", () => {
     ? "The model trained on 2021."
     : "Outside 2021: fine to try, but it is not the year the model learned.";
 });
+/* The model card and the hint follow the dropdown, so what the page claims is
+   always the model it is about to run - not the one it opened on. */
+function describeModel(name) {
+  const m = (state.info.models || []).find((r) => r.name === name) || state.info.model;
+  const pct = (v) => (v == null ? "not measured" : `${(100 * v).toFixed(1)}%`);
+  const params = m.parameters ? `${(m.parameters / 1e6).toFixed(2)} M parameters` : "";
+  $("modelHint").textContent =
+    `${m.classes - 1} classes, reads ${m.features === "month" ? "one month of radar" : "the month plus the year's mean and deviation"}.`
+    + (name === state.info.default_model ? " Best validation score - the default." : "");
+  $("modelcard").innerHTML =
+    `Model <strong>${m.name}</strong>${params ? ", " + params : ""}, trained from scratch on Sentinel-1 alone. `
+    + `Agreement with Dynamic World: <strong>${pct(m.val_miou)}</strong> validation, `
+    + `<strong>${pct(m.test_miou)}</strong> on unseen test regions (mIoU over ${m.classes - 1} classes). `
+    + `Validation regions are each dominated by one class, so the test figure is the honest one.`;
+}
+
+$("model").addEventListener("change", () => describeModel($("model").value));
 $("form").addEventListener("submit", run);
 
 /* ------------------------------------------------------------------ start */
@@ -405,10 +423,15 @@ $("form").addEventListener("submit", run);
   const i = state.info;
   $("start").innerHTML = i.start_months.slice().reverse().map((m) =>
     `<option value="${m}" ${m === i.default_start ? "selected" : ""}>${SHORT[+m.slice(5) - 1]} ${m.slice(0, 4)} – ${SHORT[(+m.slice(5) + 10) % 12]} ${+m.slice(0, 4) + (m.slice(5) === "01" ? 0 : 1)}</option>`).join("");
-  $("modelcard").innerHTML =
-    `Model <strong>${i.model.name}</strong>, ${(i.model.parameters / 1e6).toFixed(2)} M parameters, trained from scratch on 18 regions of 2021 radar. ` +
-    `Agreement with Dynamic World: <strong>${(100 * i.model.val_miou).toFixed(1)}%</strong> validation, ` +
-    `<strong>${(100 * i.model.test_miou).toFixed(1)}%</strong> on unseen test regions (mIoU, nine classes).`;
+  /* The class count is in every label on purpose: a six-class mIoU and a
+     nine-class mIoU are not the same measurement, and side by side without it
+     the smaller class list just looks like a better model. */
+  $("model").innerHTML = (i.models || [i.model]).map((m) => {
+    const val = m.val_miou == null ? "no score" : `${(100 * m.val_miou).toFixed(1)}% val`;
+    return `<option value="${m.name}" ${m.name === i.default_model ? "selected" : ""}>`
+      + `${m.name} — ${m.classes - 1} classes, ${val}</option>`;
+  }).join("");
+  describeModel($("model").value);
   $("places").innerHTML = PLACES.map((p, k) => {
     const f = familiarity(boxAround(p.lat, p.lon, 20));
     return `<button type="button" class="chip" data-k="${k}">${p.name}<i class="${f.status}">${TAG_TEXT[f.status]}</i></button>`;

@@ -111,47 +111,162 @@ def familiarity(bbox, months):
 
 
 # ------------------------------------------------------------------ model
-_model = {}
+#
+# Every trained run whose weights are on this computer is offered, so the model
+# is a choice on the page rather than something the app decides silently. What
+# makes a run usable is the INPUT it was trained to read, because the pipeline
+# has to be able to build it from the radar it downloads:
+#
+#   3 channels   the month being mapped: VV, VH, VV-VH          "month"
+#   9 channels   that, plus the year's mean and standard         "month + year"
+#                deviation per channel (training's `mstat`)
+#
+# A run with any other input is listed by nothing and cannot be selected.
+# Output classes may differ too - a six-class run has seven channels out - and
+# everything downstream reads the count off the model, so the page's legend,
+# the shares and the change table all follow.
+_models = {}
+_listing = {}
 _model_lock = threading.Lock()
 
+WEIGHT_DIRS = [config.WEIGHTS, config.WEIGHTS / "exp08", config.WEIGHTS / "sixclass"]
+FEATURES = {3: "month", 9: "month + year"}
 
-def pick_run():
-    """Best VALIDATION score among the 9-class runs whose weights are here.
 
-    Results are committed to git but weights are not, so a run trained on
-    another machine can be in outputs/ without its weights file. Skipping it
-    keeps the app starting on the best model this computer actually has.
+def _scores_for(name):
+    """(validation mIoU, test mIoU, parameters) from whichever results file holds them.
+
+    Three notebooks write three shapes, and a run is worth offering even when
+    its results file is missing entirely - the score is then simply unknown.
     """
-    scored = []
-    for path in config.OUTPUTS.glob("*_result.json"):
+    for path in (config.OUTPUTS / f"{name}_result.json",
+                 config.OUTPUTS / "exp08" / f"{name}.json",
+                 config.OUTPUTS / "sixclass" / f"{name}_result.json"):
+        if not path.exists():
+            continue
         r = json.loads(path.read_text())
-        name = path.stem.replace("_result", "")
-        if (str(r.get("recipe", "")).startswith("nine-classes")
-                and (config.WEIGHTS / f"{name}_best.pt").exists()):
-            scored.append((r["val"]["mean_iou"], name, r))
-    if not scored:
-        raise RuntimeError("No 9-class run with weights found - put a *_best.pt "
-                           "file in weights/ (see the README).")
-    return max(scored, key=lambda s: s[0])
+        val, test = r.get("val") or {}, r.get("test") or {}
+        if "scores" in r:                                  # notebook 09's shape
+            val = (r["scores"].get("val") or {}).get("plain", {})
+            test = (r["scores"].get("test") or {}).get("plain", {})
+
+        def pick(d):
+            for key in ("mean_iou", "miou", "miou_9"):
+                if key in d:
+                    return d[key]
+            return None
+
+        return pick(val), pick(test), r.get("parameters")
+    return None, None, None
 
 
-def model():
+def available_models(refresh=False):
+    """Runs this computer can actually run, best validation score first."""
+    if _listing and not refresh:
+        return _listing["runs"]
+    found = {}
+    for folder in WEIGHT_DIRS:
+        for path in sorted(folder.glob("*_best.pt")):
+            name = path.stem.replace("_best", "")
+            if name in found:
+                continue                                   # weights/ wins over its subfolders
+            try:
+                saved = torch.load(path, map_location="cpu", weights_only=False)
+            except Exception:
+                continue                                   # unreadable checkpoint: not offered
+            kwargs = dict(saved.get("kwargs") or {})
+            channels = kwargs.get("in_channels", saved.get("in_channels", 3))
+            classes = kwargs.get("classes", saved.get("classes", config.NUM_CLASSES))
+            if channels not in FEATURES:
+                continue
+            val, test, parameters = _scores_for(name)
+            found[name] = {"name": name, "path": str(path), "architecture": saved.get("model"),
+                           "in_channels": channels, "classes": classes,
+                           "features": FEATURES[channels], "epoch": saved.get("epoch"),
+                           "parameters": parameters, "val_miou": val, "test_miou": test,
+                           "recipe": saved.get("recipe")}
+    runs = sorted(found.values(), key=lambda m: (m["val_miou"] is None, -(m["val_miou"] or 0)))
+    _listing["runs"] = runs
+    return runs
+
+
+def default_model():
+    """The best VALIDATION score among the FULL class list, never the best test score.
+
+    Two rules, and both matter.
+
+    Choosing by test would mean the test set had been used to make a decision,
+    and it would stop being an independent estimate.
+
+    And a mean IoU is only comparable across models that answer the same
+    question. A six-class run scores 75.4% on validation against this
+    nine-class model's 51.3%, but it is not three classes better - it simply
+    was not asked about the three hardest ones. Ranking them together would
+    quietly hand the prototype a model that cannot name a wetland or a
+    glacier. So the default is drawn from the runs that predict every class;
+    anything narrower has to be chosen by hand on the page.
+    """
+    runs = available_models()
+    if not runs:
+        raise RuntimeError("No trained weights found - put a *_best.pt file in "
+                           "weights/ (see the README).")
+    full = [r for r in runs if r["classes"] == config.NUM_CLASSES]
+    return (full or runs)[0]["name"]
+
+
+def model(name=None):
+    name = name or default_model()
     with _model_lock:
-        if not _model:
-            val, name, result = pick_run()
-            saved = torch.load(config.WEIGHTS / f"{name}_best.pt", map_location=DEVICE,
-                               weights_only=False)
-            net = build_model(saved["model"], **saved["kwargs"]).to(DEVICE).eval()
+        if name not in _models:
+            spec = next((m for m in available_models() if m["name"] == name), None)
+            if spec is None:
+                raise RuntimeError(f"No usable weights for {name!r} on this computer.")
+            saved = torch.load(spec["path"], map_location=DEVICE, weights_only=False)
+            kwargs = dict(saved.get("kwargs") or {})
+            kwargs.setdefault("in_channels", spec["in_channels"])
+            kwargs.setdefault("classes", spec["classes"])
+            net = build_model(saved["model"], **kwargs).to(DEVICE).eval()
             net.load_state_dict(saved["state"])
             noise = None
             change_file = config.OUTPUTS / f"monthly_change_{name}.json"
             if change_file.exists():
                 noise = json.loads(change_file.read_text()).get("noise_floor_pts")
-            _model.update(net=net, name=name, architecture=saved["model"],
-                          parameters=result.get("parameters"),
-                          val_miou=val, test_miou=result["test"]["mean_iou"],
-                          epoch=saved.get("epoch"), noise_floor=noise)
-        return _model
+            spec = {**spec, "parameters": spec["parameters"]
+                    or sum(p.numel() for p in net.parameters())}
+            _models[name] = {**spec, "net": net, "noise_floor": noise}
+        return _models[name]
+
+
+CARD = ("name", "architecture", "parameters", "val_miou", "test_miou", "epoch",
+        "noise_floor", "classes", "in_channels", "features")
+
+
+def card(info):
+    """What the page is told about the model it is looking at."""
+    return {k: info.get(k) for k in CARD}
+
+
+def year_statistics(months_x, months_seen):
+    """The year's mean and standard deviation per channel.
+
+    The same arithmetic as the `mstat` tiles in notebook 08: months a satellite
+    did not see are left out of both, and the deviation is scaled by four
+    because the deviation of a 0-1 channel is small. If this differed from
+    training by so much as that factor, the model would fail quietly.
+    """
+    stack = np.stack(months_x)                                  # (months, 3, H, W)
+    weight = np.stack(months_seen)[:, None].astype(np.float32)  # (months, 1, H, W)
+    counted = np.clip(weight.sum(0), 1.0, None)
+    mean = (stack * weight).sum(0) / counted
+    std = np.sqrt((((stack - mean) ** 2) * weight).sum(0) / counted)
+    return mean.astype(np.float32), np.clip(std * 4.0, 0.0, 1.0).astype(np.float32)
+
+
+def month_input(months_x, year_mean, year_std, i, channels):
+    """The tensor the chosen model reads for month i."""
+    if channels == 3:
+        return months_x[i]
+    return np.concatenate([months_x[i], year_mean, year_std], axis=0)
 
 
 def starts(total, tile=config.TILE_PX, stride=STRIDE):
@@ -162,12 +277,12 @@ def starts(total, tile=config.TILE_PX, stride=STRIDE):
 
 
 @torch.no_grad()
-def probabilities(x):
-    """(3, H, W) radar -> (9, H, W) class probabilities, overlapping tiles averaged."""
-    net = model()["net"]
+def probabilities(x, info):
+    """(C, H, W) radar -> (classes - 1, H, W) probabilities, overlapping tiles averaged."""
+    net = info["net"]
     _, H, W = x.shape
     T = config.TILE_PX
-    score = np.zeros((config.NUM_CLASSES - 1, H, W), np.float32)
+    score = np.zeros((info["classes"] - 1, H, W), np.float32)
     hits = np.zeros((H, W), np.float32)
     spots = [(r, c) for r in starts(H) for c in starts(W)]
     for i in range(0, len(spots), BATCH):
@@ -220,9 +335,25 @@ def search_range(bbox, first_month, last_month):
 class Job:
     """One run. The web page polls `state()` while it works."""
 
-    def __init__(self, lat, lon, start, size_km):
+    def __init__(self, lat, lon, start, size_km, model_name=None):
         self.lat, self.lon, self.start, self.size_km = lat, lon, start, size_km
-        self.key = f"{lat:.3f}_{lon:.3f}_{start}_{size_km}km"
+        self.model_name = model_name or default_model()
+        # Two folders, because the radar and the maps have different owners.
+        #
+        # The RADAR belongs to the place: twelve months of Sentinel-1 for a
+        # point are the same bytes whichever model reads them, and downloading
+        # them again to compare two models would waste minutes and bandwidth on
+        # files already on disk.
+        #
+        # The MAPS belong to the model: switching model and getting the first
+        # one's PNGs back would be worse than slow, it would be wrong.
+        #
+        # The default model's maps stay in the radar folder, so every cache made
+        # before the model could be chosen is still found exactly as it was.
+        place = f"{lat:.3f}_{lon:.3f}_{start}_{size_km}km"
+        tag = "" if self.model_name == default_model() else f"_{self.model_name}"
+        self.key = place + tag
+        self.radar = CACHE / place
         self.folder = CACHE / self.key
         self.months = month_list(start)
         self.stage, self.message, self.error = "queued", "Waiting to start", None
@@ -231,7 +362,8 @@ class Job:
         self.result = None
 
     def state(self):
-        return {"key": self.key, "stage": self.stage, "message": self.message,
+        return {"key": self.key, "model": self.model_name,
+                "stage": self.stage, "message": self.message,
                 "error": self.error, "months": self.months, "months_done": self.months_done,
                 "passes": self.passes, "elapsed": round(time.time() - self.started, 1),
                 "done": self.stage in ("done", "failed")}
@@ -245,7 +377,10 @@ class Job:
             cached = self.folder / "result.json"
             if cached.exists():
                 result = json.loads(cached.read_text())
-                if result.get("pictures") == PICTURES:
+                # The model's name is checked as well as the picture version: a
+                # cache written by a different model describes a different map.
+                if (result.get("pictures") == PICTURES
+                        and (result.get("model") or {}).get("name") == self.model_name):
                     self.result = result
                     self.months_done = list(self.months)
                     self.say("done", "Loaded from the cache")
@@ -253,6 +388,7 @@ class Job:
                 # pictures drawn by an older version: redraw them from the radar
                 # already on disk - _fetch skips every month it finds there
 
+            self.radar.mkdir(parents=True, exist_ok=True)
             self.folder.mkdir(parents=True, exist_ok=True)
             self._fetch()
             self._map()
@@ -287,7 +423,7 @@ class Job:
             raise RuntimeError(f"Track {track} has no pass in {', '.join(empty)}; "
                                f"try another start month.")
 
-        todo = [m for m in self.months if not (self.folder / f"s1_{m}.tif").exists()]
+        todo = [m for m in self.months if not (self.radar / f"s1_{m}.tif").exists()]
         self.months_done = [m for m in self.months if m not in todo]
         total = sum(self.passes[m] for m in todo)
         got = {m: [] for m in todo}
@@ -318,17 +454,30 @@ class Job:
             vv = np.nanmedian(np.stack([p[0] for p in passes]), axis=0)
             vh = np.nanmedian(np.stack([p[1] for p in passes]), axis=0)
         observations = np.sum(np.stack([p[2] for p in passes]), axis=0).astype("float32")
-        fetch_s1.write_geotiff(self.folder / f"s1_{month}.tif", vv, vh, observations,
+        fetch_s1.write_geotiff(self.radar / f"s1_{month}.tif", vv, vh, observations,
                                passes[0][3], track)
 
     def _map(self):
-        info = model()
+        info = model(self.model_name)
+        class_ids = list(range(1, info["classes"]))
         self.say("mapping", f"Running {info['name']} on 12 months of radar")
+
+        # Read all twelve first. A model that reads the year's statistics needs
+        # every month before it can map any single one.
+        months_x, months_seen = [], []
+        for month in self.months:
+            x, seen = radar_channels(self.radar / f"s1_{month}.tif")
+            months_x.append(x)
+            months_seen.append(seen)
+        year_mean, year_std = (year_statistics(months_x, months_seen)
+                               if info["in_channels"] > 3 else (None, None))
+
         seen_all, classes, probs_sum, conf = None, [], None, []
         radar_stats = []
         for i, month in enumerate(self.months):
-            x, seen = radar_channels(self.folder / f"s1_{month}.tif")
-            p = probabilities(x)
+            x, seen = months_x[i], months_seen[i]
+            p = probabilities(month_input(months_x, year_mean, year_std, i,
+                                          info["in_channels"]), info)
             c = (p.argmax(0) + 1).astype(np.uint8)
             classes.append(c)
             probs_sum = p if probs_sum is None else probs_sum + p
@@ -344,9 +493,9 @@ class Job:
 
         counted = np.stack(classes)[:, seen_all]
         n = max(counted.shape[1], 1)
-        shares = [[round(100 * float((row == c).sum()) / n, 2) for c in CLASS_IDS]
+        shares = [[round(100 * float((row == c).sum()) / n, 2) for c in class_ids]
                   for row in counted]
-        year_share = [round(100 * float((year[seen_all] == c).sum()) / n, 2) for c in CLASS_IDS]
+        year_share = [round(100 * float((year[seen_all] == c).sum()) / n, 2) for c in class_ids]
         changes = [[round(b - a, 2) for a, b in zip(shares[i - 1], shares[i])]
                    for i in range(1, 12)]
         total = [round(b - a, 2) for a, b in zip(shares[0], shares[-1])]
@@ -363,10 +512,9 @@ class Job:
             "track": self.track,
             "measured_pct": round(100 * float(seen_all.mean()), 1),
             "familiarity": familiarity(self.bbox, self.months),
-            "model": {k: info[k] for k in ("name", "architecture", "parameters",
-                                           "val_miou", "test_miou", "epoch", "noise_floor")},
+            "model": card(info),
             "classes": [{"id": c, "name": config.CLASSES[c], "colour": COLOURS[c]}
-                        for c in CLASS_IDS],
+                        for c in class_ids],
             "shares": shares,                 # [month][class] in %, same pixels every month
             "year_share": year_share,         # one map from the 12 months' averaged probabilities
             "change": changes,                # month-to-month, percentage points

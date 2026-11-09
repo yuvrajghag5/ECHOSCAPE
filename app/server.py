@@ -39,6 +39,7 @@ class Request(BaseModel):
     lon: float = Field(ge=-180, le=180)
     start: str
     size_km: int = Field(default=20, ge=10, le=40)
+    model: str | None = None                # None: the best validation score
 
 
 @app.get("/")
@@ -50,12 +51,16 @@ def index():
 def info():
     m = pipeline.model()
     return {
-        "model": {k: m[k] for k in ("name", "architecture", "parameters", "val_miou",
-                                    "test_miou", "epoch", "noise_floor")},
+        "model": pipeline.card(m),
+        # Every run whose weights are on this computer, best validation first.
+        # The page offers them in a dropdown; `default_model` is the one it opens
+        # on, chosen on validation and never on test.
+        "models": [{k: r.get(k) for k in pipeline.CARD} for r in pipeline.available_models()],
+        "default_model": pipeline.default_model(),
         "start_months": pipeline.start_months(),
         "default_start": f"{pipeline.config.YEAR}-01",
         "classes": [{"id": c, "name": pipeline.config.CLASSES[c], "colour": pipeline.COLOURS[c]}
-                    for c in pipeline.CLASS_IDS],
+                    for c in range(1, m["classes"])],
         "regions": [{"name": n, "bbox": pipeline.config.bbox_for(n),
                      "split": ("test" if n in pipeline.config.TEST_AOIS
                                else "validation" if n in pipeline.config.VAL_AOIS else "training")}
@@ -73,7 +78,12 @@ def run(req: Request):
     if req.start not in pipeline.start_months():
         raise HTTPException(400, f"Start month must be between {pipeline.start_months()[0]} "
                                  f"and {pipeline.latest_start()}, so all 12 months exist.")
-    job = pipeline.Job(round(req.lat, 3), round(req.lon, 3), req.start, req.size_km)
+    known = [r["name"] for r in pipeline.available_models()]
+    if req.model and req.model not in known:
+        raise HTTPException(400, f"No weights for {req.model!r} here. Available: "
+                                 f"{', '.join(known)}.")
+    job = pipeline.Job(round(req.lat, 3), round(req.lon, 3), req.start, req.size_km,
+                       model_name=req.model)
     running = jobs.get(job.key)
     if running and not (running.stage == "failed"):
         return running.state()                      # same request twice: follow the first
@@ -111,9 +121,14 @@ def image(key: str, name: str):
 app.mount("/static", StaticFiles(directory=STATIC), name="static")
 
 if __name__ == "__main__":
-    print("loading the model ...")
+    print("looking for trained weights ...")
+    for r in pipeline.available_models():
+        val = f"{100 * r['val_miou']:.1f}%" if r["val_miou"] is not None else "   -  "
+        print(f"   {r['name']:<22} {r['architecture']:<10} {r['classes']} classes, "
+              f"input: {r['features']:<13} validation {val}")
     m = pipeline.model()
-    print(f"   {m['name']} ({m['architecture']}), validation mIoU {100 * m['val_miou']:.1f}%, "
-          f"on {pipeline.DEVICE}")
+    print(f"\nopening on {m['name']} - the best validation score. Any of the above can be "
+          f"chosen on the page.")
+    print(f"running on {pipeline.DEVICE}")
     print(f"\nECHOSCAPE is at  http://127.0.0.1:{PORT}\n")
     uvicorn.run(app, host="127.0.0.1", port=PORT, log_level="warning")
