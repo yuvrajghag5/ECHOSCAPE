@@ -22,7 +22,7 @@ Google Dynamic World, built from Sentinel-2 — and is then thrown away.
 | 5. Train | **done** — U-Net, DeepLabV3+ and SegFormer from scratch, plus six variants. SegFormer serves the prototype. Longer training and a 12x bigger model both gained nothing; giving the model the whole year gained 24 points on test |
 | 6. Evaluate | **done** — per-class IoU and F1 on test, monthly change on the 7 test regions, and a Mannheim case study checked against ESA WorldCover |
 | 7. Prototype | **done** — `app/`, a web page: any point on Earth, any 12 months since 2017, with a model selector |
-| 8. Submission | **done** — [docs/report.pdf](docs/report.pdf), eight executed notebooks, screen recording |
+| 8. Submission | **done** — [Yuvraj_ghag_100007052_report.pdf](Yuvraj_ghag_100007052_report.pdf), eight executed notebooks, screen recording |
 
 The labels are machine-made, so every score measures **agreement with Dynamic
 World** — itself 73–84% accurate in published comparisons — not agreement with
@@ -63,13 +63,13 @@ the remaining steps.
 
 | Deliverable | Where |
 |---|---|
-| **Report** | [docs/report.pdf](docs/report.pdf) — 20 pages, with the figures taken from the notebooks |
+| **Report** | [Yuvraj_ghag_100007052_report.pdf](Yuvraj_ghag_100007052_report.pdf) — 21 pages, with the figures taken from the notebooks |
 | **Notebooks, with their outputs** | [notebooks/](notebooks/) — eight, every one committed with its results and figures |
 | **Prototype source** | [app/](app/), plus `acquisition/`, `labelling/`, `training/` |
 | **Setup, dependencies, API keys** | this file, below. No account or API key is needed to run the prototype |
 | **Requirements file** | [requirements.txt](requirements.txt) — 36 pinned packages; torch installs separately, see Setup |
-| **Dataset** | too large for GitHub (several GB): `TODO: paste the download link here` |
-| **Trained weights** | not in the repository: `TODO: paste the download link here` |
+| **Dataset** | too large for GitHub (several GB): [Google Drive](https://drive.google.com/drive/folders/1kOM_NxRGCYLPbaEtoS-phzAVmrRyPaYg?usp=drive_link) |
+| **Trained weights** | not in the repository: [Google Drive](https://drive.google.com/drive/folders/1RDyoPWymkAwlDKERpMkT_do5iyZg91Xg?usp=drive_link) |
 | **Screen recording** | a full run over Mannheim: `TODO: paste the link here` |
 
 The dataset and the weights are delivered separately because GitHub caps a file

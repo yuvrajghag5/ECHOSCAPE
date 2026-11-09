@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wdth,wght@12..96,75..100,400..800&family=Atkinson+Hyperlegible:wght@400;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/static/style.css?v=6">
+  <link rel="stylesheet" href="/static/style.css?v=7">
 </head>
 <body>
 <div class="shell">
@@ -108,7 +108,10 @@
       </div>
       <ul id="shares" class="shares"></ul>
 
-      <h3 class="eyebrow">Over the 12 months</h3>
+      <h3 class="eyebrow" id="totalTitle">Total change</h3>
+      <ul id="totals" class="swings"></ul>
+
+      <h3 class="eyebrow">Biggest swing across the year</h3>
       <ul id="swings" class="swings"></ul>
       <p class="fine" id="noiseNote"></p>
 
@@ -116,6 +119,6 @@
   </section>
 </div>
 
-<script src="/static/app.js?v=6"></script>
+<script src="/static/app.js?v=7"></script>
 </body>
 </html>

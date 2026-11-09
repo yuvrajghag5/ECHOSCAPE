@@ -251,6 +251,9 @@ input[type="number"], select {
 .swings .verdict { font: 500 0.7rem/1 var(--mono); text-transform: uppercase; letter-spacing: .04em; }
 .swings .verdict.clear { color: var(--sweep); }
 .swings .verdict.noise { color: var(--graphite); }
+.swings .verdict.up { color: #1d6b3a; }
+.swings .verdict.down { color: #a1122f; }
+.swings .verdict:not(.up):not(.down):not(.clear):not(.noise) { color: var(--graphite); }
 .fine { margin-bottom: 18px; }
 .readout h3.eyebrow { margin-top: 4px; }
 

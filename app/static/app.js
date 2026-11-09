@@ -188,6 +188,26 @@ function renderMonth(i) {
 
 function renderYear(r) {
   const nf = r.model.noise_floor;
+
+  /* The brief asks for the total change from the FIRST month to the LAST, in
+     percentage points. That is a different question from the swing below, which
+     is the lowest month against the highest: a class can end the year where it
+     started and still have moved 30 points in between. Both are shown. */
+  const first = r.months[0], last = r.months[r.months.length - 1];
+  $("totalTitle").textContent =
+    `Total change, ${monthName(first)} ${first.slice(0, 4)} to ${monthName(last)} ${last.slice(0, 4)}`;
+  const totals = shownClasses(r)
+    .map((c) => ({ ...c, from: r.shares[0][c.k], to: r.shares[r.shares.length - 1][c.k],
+                   pts: r.total_change[c.k] }))
+    .sort((a, b) => Math.abs(b.pts) - Math.abs(a.pts));
+  $("totals").innerHTML = totals.map((c) => {
+    const sign = c.pts > 0 ? "+" : c.pts < 0 ? "−" : "±";
+    const cls = Math.abs(c.pts) < 0.05 ? "" : c.pts > 0 ? "up" : "down";
+    return `<li><span class="sw" style="background:${c.colour}"></span>
+      <span class="what">${c.name} <small>${c.from.toFixed(1)}% → ${c.to.toFixed(1)}%</small></span>
+      <span class="verdict ${cls}" title="total change, first month to last, in percentage points"
+        >${sign}${Math.abs(c.pts).toFixed(1)} pts</span></li>`;
+  }).join("");
   const swings = shownClasses(r).map((c) => {
     const vals = r.shares.map((s) => s[c.k]);
     const lo = Math.min(...vals), hi = Math.max(...vals);

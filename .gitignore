@@ -17,6 +17,10 @@ outputs/**/counts_*.json
 outputs/**/sample_*.json
 outputs/**/tiles_*.json
 
+# The screen recording. 144 MB, over GitHub's 100 MB per-file limit, so it is
+# delivered with the dataset instead.
+*.mp4
+
 # Python
 __pycache__/
 *.py[cod]
