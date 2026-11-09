@@ -1123,7 +1123,18 @@ untouched. Took about 33 min (the 40-epoch run took 22). The app and notebook
 04 pick the best run by validation, so if `segformer60` wins there, both
 switch to it. Notebook 04 then has to be rerun to give it a noise floor.
 
-**Result.** Pending: run the notebook.
+**Result (run on the datalab A6000, 9 November, 9.9 min).**
+
+| SegFormer, 2.3 M | best epoch | validation | test, 9 classes | test, 6 main |
+|---|---|---|---|---|
+| 40 epochs | 40 | **51.3%** | 31.1% | 46.6% |
+| 60 epochs | 55 | 51.1% | 31.5% | 47.3% |
+
+No gain. Validation passed 50% again only in the last few epochs, as the
+learning rate faded (epoch 30: 47.7%, 40: 46.1%, 50: 47.9%, 60: 50.0%).
+The longer schedule mostly spends extra epochs at a high learning rate
+before settling where the 40-epoch run settled. Test moves by +0.4 / +0.7,
+inside the run-to-run noise. **Longer training is not what is missing.**
 
 ## 9. Does a bigger model help? A larger SegFormer on the datalab — 8 November 2026
 
@@ -1189,8 +1200,12 @@ the scores back; no gain means the data is.
 - The test confusion matrix (big model) shows two more patterns:
   - 32% of test water is called grass;
   - snow goes to cropland 83% of the time.
-- Notebook 05 (`segformer60`) was not run; this run already answers the
-  question it was for.
+- **The big model peaked early.** Its best epoch was 27 of 60 (19.3 min on
+  the A6000); after that, validation dipped and recovered without passing it.
+  More capacity reached the same ceiling sooner, which is the usual sign that
+  the data, not the model, sets the ceiling.
+- With §8 (60 epochs, no gain), both "train longer" and "train bigger" are
+  now measured, and neither moves validation.
 
 ---
 # Phase 6 — Evaluation
