@@ -1255,7 +1255,7 @@ import.
 new run compares directly with every earlier one. The cost is that test still
 holds only 17k-85k pixels of these classes, so their test IoU will be noisy.
 
-**The run.** `notebooks/07_segformer_rare_classes.ipynb` uses notebook 03's
+**The run.** A copy of notebook 03's
 SegFormer and recipe (2.3 M parameters, 40 epochs) on the rebuilt tiles,
 saved as `segformer_rare`. The new name matters: under `segformer`, RESUME
 would find the finished 40-epoch checkpoint and only re-score it.
@@ -1266,7 +1266,11 @@ would find the finished 40-epoch checkpoint and only re-score it.
   that wins validation would otherwise make the app look for weights that
   are not on the laptop, and crash.
 
-**Result.** Pending.
+**Result.** Never run to completion, and overtaken: notebook 08's
+multi-temporal experiment reached the same question from the input side and
+answered it (Phase 5 §11). The six regions are in the dataset and the audit in
+notebook 08 shows what they did to the class balance; the notebook itself was
+removed rather than shipped empty.
 
 ---
 # Phase 6 — Evaluation

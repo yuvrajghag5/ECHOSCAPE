@@ -1,12 +1,14 @@
-# Current environment. Regenerate with:  .venv\Scripts\python.exe -m pip freeze
+# Every package the pipeline and the prototype need, pinned.
 #
-# Still to install, per phase:
-#   Phase 2b  scikit-learn          INSTALLED
-#   Phase 3   scikit-learn          INSTALLED
-#   Phase 5   torch (CUDA build)    must be Python 3.11, there is no 3.14 build
-#             segmentation-models-pytorch
+# torch is NOT listed here on purpose: plain `pip install torch` gives a CPU-only
+# build. Install it from its own index, on Python 3.11 - there is no CUDA build
+# for 3.14:
 #
-# Pin everything from pip freeze before submission.
+#   pip install torch --index-url https://download.pytorch.org/whl/cu121
+#
+# No account and no API key is needed. Sentinel-1 comes from Microsoft Planetary
+# Computer anonymously; the labels ship with the dataset, and only regenerating
+# them needs a (free) Google account for Earth Engine.
 affine==3.0.1
 annotated-doc==0.0.5
 annotated-types==0.8.0

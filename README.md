@@ -35,7 +35,19 @@ flooded vegetation, snow & ice). U-Net, DeepLabV3+ and SegFormer are written in
 weight averaging, best epoch kept. All three are trained (results in
 `docs/changes.md`, Phase 5 §7). `notebooks/04_monthly_change.ipynb` then maps
 every month of 2021 and reports how much of each region each class covered,
-month by month. `docs/phase.md` lists the remaining steps.
+month by month.
+
+| notebook | what it answers |
+|---|---|
+| `01_train_unet`, `02_train_deeplab`, `03_train_seg` | three architectures, one recipe: curves, per-class IoU, confusion |
+| `04_monthly_change` | the twelve monthly maps, class shares and month-to-month change |
+| `05_segformer_60_epochs` | does training longer help? No. |
+| `06_segformer_big` | does a 12x bigger model help? No. |
+| `08_experiments` | nine experiments in one sweep - and the one that worked |
+| `09_sixclass` | what dropping the three unmeasurable classes is worth |
+
+Every notebook is committed with its outputs and figures. `docs/phase.md` lists
+the remaining steps.
 
 ## Project layout
 
