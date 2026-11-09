@@ -63,6 +63,9 @@ exports only those 12.
    **Done 9 Nov:** 60 epochs: validation 51.1%, test 31.5% (no gain).
    Big model: validation 51.1% (no gain), test 32.7% / 49.0% (6 main).
    Neither longer training nor model size is the limit.
+   **9 Nov: six rare-class training regions added** (vatnajokull, baltoro,
+   sudd, everglades, sonoran, kalahari; `changes.md` Phase 5 §10). Next:
+   download, export Dynamic World, import, rebuild tiles, run notebook 07.
    Code pushed to GitHub; tiles go to the university data lab separately
    (they are ~700 MB and stay out of git), training runs there.
 5. **How the land changed over the year** - `notebooks/04_monthly_change.ipynb`

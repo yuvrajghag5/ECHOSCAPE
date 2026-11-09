@@ -1207,6 +1207,67 @@ the scores back; no gain means the data is.
 - With §8 (60 epochs, no gain), both "train longer" and "train bigger" are
   now measured, and neither moves validation.
 
+## 10. More data for the three rare classes — 9 November 2026
+
+**Why.** Every model scores about 0% on shrub & scrub, flooded vegetation and
+snow & ice. The training set barely has them:
+
+| class | training pixels | share | validation pixels | test pixels |
+|---|---|---|---|---|
+| shrub & scrub | 875,388 | 1.16% | 110,676 | 84,700 |
+| snow & ice | 662,832 | 0.87% | 324 | 26,076 |
+| flooded vegetation | 19,500 | 0.03% | 21,768 | 16,811 |
+
+Flooded vegetation is about one tile's worth of pixels in all of training.
+§8 and §9 showed that longer training and a bigger model do not help, so the
+remaining lever is data.
+
+**Regions chosen.** Thirteen candidates were scouted read-only against the
+live catalogues before anything was downloaded. Each was checked for
+Sentinel-1 in all 12 months of 2021 on one track (the same ≥90% coverage rule
+as `fetch_s1.choose_track`) and for ESA WorldCover 2021's share of the box in
+the target class. Kept, two per class, all **training only**:
+
+| region | class | WorldCover share | passes/month |
+|---|---|---|---|
+| vatnajokull (Iceland) | snow & ice | 100% snow/ice | 5.0 |
+| baltoro (Karakoram) | snow & ice | 87% snow/ice | 2.5 |
+| sudd (South Sudan) | flooded vegetation | 91% wetland | 6.8 |
+| everglades (Florida) | flooded vegetation | 98% wetland | 2.4 |
+| sonoran (Arizona) | shrub & scrub | 43% shrub | 4.9 |
+| kalahari (Botswana) | shrub & scrub | 40% shrub, 60% grass | 7.0 |
+
+Rejected:
+- aletsch: only 35% ice;
+- louisiana: 81% open water;
+- sundarbans: mangrove, which Dynamic World tends to call trees;
+- svalbard: 46% ice, 34% bare;
+- karoo: 72% bare;
+- mallee: 60% trees;
+- okavango: kept as a reserve.
+
+WorldCover is only a proxy. The labels still come from Dynamic World, whose
+"flooded vegetation" and "shrub & scrub" do not always match WorldCover's
+"wetland" and "shrub". `check_labels.py` reports the real shares after
+import.
+
+**Why training only.** Validation and test stay exactly as they were, so the
+new run compares directly with every earlier one. The cost is that test still
+holds only 17k-85k pixels of these classes, so their test IoU will be noisy.
+
+**The run.** `notebooks/07_segformer_rare_classes.ipynb` uses notebook 03's
+SegFormer and recipe (2.3 M parameters, 40 epochs) on the rebuilt tiles,
+saved as `segformer_rare`. The new name matters: under `segformer`, RESUME
+would find the finished 40-epoch checkpoint and only re-score it.
+
+**The app now skips runs whose weights are missing.**
+- `app/pipeline.py` `pick_run` considers only runs with a `weights/<run>_best.pt`.
+- Results are committed and weights are not. A run trained on the datalab
+  that wins validation would otherwise make the app look for weights that
+  are not on the laptop, and crash.
+
+**Result.** Pending.
+
 ---
 # Phase 6 — Evaluation
 

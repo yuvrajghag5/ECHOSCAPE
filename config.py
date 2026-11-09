@@ -135,6 +135,30 @@ AOIS = {
     "arabia":      {"centre": (45.00, 24.00),   "class": "bare",
                     "passes": 4.7, "note": "sand sea and gravel plain"},
 
+    # ---- the three rare classes (added 9 Nov 2026, training only) -------
+    # In the first build shrub & scrub was 1.16% of the training pixels, snow
+    # & ice 0.87% and flooded vegetation 0.03% - about one tile's worth - and
+    # every model scored ~0% on all three. Two regions each, training only,
+    # so validation and test stay exactly as before and the runs compare.
+    # Scouted read-only before downloading (9 Nov): every one has Sentinel-1
+    # in all 12 months of 2021 on one track covering >=95% of the box, and
+    # "share" is ESA WorldCover 2021's share of the box in that class.
+    # (Rejected: aletsch 35% ice, louisiana 81% open water, sundarbans
+    # mangrove - Dynamic World tends to call it trees - karoo 72% bare,
+    # mallee 60% trees.)
+    "vatnajokull": {"centre": (-16.70, 64.42),  "class": "snow & ice",
+                    "passes": 5.0, "note": "Icelandic ice cap, 100% snow/ice"},
+    "baltoro":     {"centre": (76.45, 35.75),   "class": "snow & ice",
+                    "passes": 2.5, "note": "Karakoram glaciers, 87% snow/ice"},
+    "sudd":        {"centre": (30.60, 7.50),    "class": "flooded vegetation",
+                    "passes": 6.8, "note": "Nile swamp, South Sudan, 91% wetland"},
+    "everglades":  {"centre": (-80.80, 25.70),  "class": "flooded vegetation",
+                    "passes": 2.4, "note": "sawgrass marsh, Florida, 98% wetland"},
+    "sonoran":     {"centre": (-113.00, 32.40), "class": "shrub & scrub",
+                    "passes": 4.9, "note": "Arizona desert scrub, 43% shrub"},
+    "kalahari":    {"centre": (21.50, -24.50),  "class": "shrub & scrub",
+                    "passes": 7.0, "note": "Botswana bushland, 40% shrub + 60% grass"},
+
     # ---- demo area ------------------------------------------------------
     # Not part of the 3-per-class design. Included because the brief requires a
     # screen recording over an urban area, and a local one is more convincing -

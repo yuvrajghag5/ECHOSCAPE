@@ -121,6 +121,7 @@ evidence. Matching metadata alone is not.
 | `notebooks/01_train_unet.ipynb`, `02_train_deeplab`, `03_train_seg` | One per model, identical but for `MODEL`: class-weighted loss, unlabelled pixels ignored, radar-specific augmentation, overfit test, 40 full epochs with weight averaging (best kept), validation and test scores, confusion matrix, comparison table across all runs. |
 | `notebooks/05_segformer_60_epochs.ipynb` | Notebook 03 with `EPOCHS = 60`, saved as run `segformer60`: tests whether longer training helps without touching the 40-epoch run. |
 | `notebooks/06_segformer_big.ipynb` | Notebook 05 with a SegFormer shaped like MiT-B2 (27.4 M parameters, `SIZE`), saved as run `segformer_big`: tests whether a bigger model helps. Meant for the datalab GPU. Both 05 and 06 load tiles with `WORKERS` parallel processes. |
+| `notebooks/07_segformer_rare_classes.ipynb` | Notebook 03's SegFormer and recipe on tiles rebuilt with six rare-class training regions (snow, flooded vegetation, shrub), saved as run `segformer_rare`. |
 | `notebooks/04_monthly_change.ipynb` | The best run (by validation) maps all 12 months of every test region; class share per month and per season, a noise floor from built-up, the biggest changes, maps, and the comparison with monthly Dynamic World. Writes `outputs/monthly_change_<run>.json` for the prototype. |
 | `visualisation/preview.py` | Visual sanity check of the radar composites. |
 | `visualisation/compare_s1_s2.py` | Side-by-side radar vs optical, for the report. |

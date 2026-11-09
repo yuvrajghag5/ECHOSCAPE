@@ -116,14 +116,22 @@ _model_lock = threading.Lock()
 
 
 def pick_run():
-    """Best VALIDATION score among the 9-class runs - as notebook 04 picks."""
+    """Best VALIDATION score among the 9-class runs whose weights are here.
+
+    Results are committed to git but weights are not, so a run trained on
+    another machine can be in outputs/ without its weights file. Skipping it
+    keeps the app starting on the best model this computer actually has.
+    """
     scored = []
     for path in config.OUTPUTS.glob("*_result.json"):
         r = json.loads(path.read_text())
-        if str(r.get("recipe", "")).startswith("nine-classes"):
-            scored.append((r["val"]["mean_iou"], path.stem.replace("_result", ""), r))
+        name = path.stem.replace("_result", "")
+        if (str(r.get("recipe", "")).startswith("nine-classes")
+                and (config.WEIGHTS / f"{name}_best.pt").exists()):
+            scored.append((r["val"]["mean_iou"], name, r))
     if not scored:
-        raise RuntimeError("No 9-class run found in outputs/ - train a model first.")
+        raise RuntimeError("No 9-class run with weights found - put a *_best.pt "
+                           "file in weights/ (see the README).")
     return max(scored, key=lambda s: s[0])
 
 

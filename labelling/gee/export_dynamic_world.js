@@ -78,16 +78,22 @@ var REGIONS = {
   congo:        [  24.365246,   0.465253,   24.634754,   0.734747],
   kansas:       [ -98.771938,  38.265253,  -98.428062,  38.534747],
   ireland:      [  -7.626000,  53.265253,   -7.174000,  53.534747],
-  death_valley: [-117.067409,  36.265253, -116.732591,  36.534747]
+  death_valley: [-117.067409,  36.265253, -116.732591,  36.534747],
+  vatnajokull:  [ -17.012079,  64.285253,  -16.387921,  64.554747],
+  baltoro:      [  76.283969,  35.615253,   76.616031,  35.884747],
+  sudd:         [  30.464091,   7.365253,   30.735909,   7.634747],
+  everglades:   [ -80.949540,  25.565253,  -80.650460,  25.834747],
+  sonoran:      [-113.159590,  32.265253, -112.840410,  32.534747],
+  kalahari:     [  21.351920, -24.634747,   21.648080, -24.365253]
 };
 
 // Which regions to create export tasks for. The first 19 were exported on
-// 3 Nov 2026; these are the validation and test regions added on 5 Nov.
-// Re-exporting the others would only spend Earth Engine quota again.
+// 3 Nov 2026 and the 12 validation and test regions on 5 Nov. These are the
+// six rare-class training regions added on 9 Nov (snow & ice, flooded
+// vegetation, shrub & scrub). Re-exporting the others would only spend
+// Earth Engine quota again.
 var EXPORT_ONLY = [
-  'chesapeake', 'paris', 'black_forest', 'beauce',
-  'serengeti', 'namib', 'lake_geneva', 'tokyo',
-  'congo', 'kansas', 'ireland', 'death_valley'
+  'vatnajokull', 'baltoro', 'sudd', 'everglades', 'sonoran', 'kalahari'
 ];
 
 
@@ -135,7 +141,7 @@ EXPORT_ONLY.forEach(function (name) {
 
 // A quick look at one region before you start 19 exports - check it looks
 // like land cover, not noise. Change the name to inspect another.
-var LOOK_AT = 'kansas';
+var LOOK_AT = 'sudd';   // check the swamp really is flooded vegetation
 var look = REGIONS[LOOK_AT];
 var lookRegion = ee.Geometry.Rectangle(look, null, false);
 var preview = annualComposite(lookRegion);
