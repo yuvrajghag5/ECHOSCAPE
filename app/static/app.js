@@ -6,15 +6,6 @@ const SVGNS = "http://www.w3.org/2000/svg";
 const SHORT = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 const REDUCED = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-const PLACES = [
-  { name: "Mannheim", lat: 49.42, lon: 8.6 },
-  { name: "Kansas", lat: 38.4, lon: -98.6 },
-  { name: "Munich", lat: 48.14, lon: 11.58 },
-  { name: "Po Valley", lat: 44.8, lon: 11.0 },
-  { name: "Dhaka", lat: 23.78, lon: 90.4 },
-  { name: "Nile at Luxor", lat: 25.7, lon: 32.65 },
-];
-
 const state = {
   info: null, result: null, key: null,
   month: 0, playing: false,
@@ -22,31 +13,12 @@ const state = {
   scanning: false,
 };
 
-/* ------------------------------------------------------------------ geometry */
-function boxAround(lat, lon, km) {                 // as pipeline.box_around
-  const halfLat = (km / 2) / 111.32;
-  const halfLon = halfLat / Math.max(Math.cos(lat * Math.PI / 180), 0.01);
-  return [lon - halfLon, lat - halfLat, lon + halfLon, lat + halfLat];
-}
-const overlaps = (a, b) => !(a[2] <= b[0] || b[2] <= a[0] || a[3] <= b[1] || b[3] <= a[1]);
-
-function familiarity(bbox) {
-  for (const r of state.info.regions) if (overlaps(bbox, r.bbox)) return { status: r.split, region: r.name };
-  return { status: "unseen", region: null };
-}
-const TAG_TEXT = { unseen: "never seen", test: "test region", validation: "validation region", training: "training region" };
-function tag(f) { return `<span class="tag ${f.status}">${TAG_TEXT[f.status]}</span>`; }
-
 /* ------------------------------------------------------------------ point */
 const SIZE_KM = 20;                    // the box the radar is fetched for
 
 function setPoint(lat, lon) {
   lat = Math.max(-80, Math.min(80, +lat)); lon = ((+lon + 540) % 360) - 180;
   $("lat").value = lat.toFixed(3); $("lon").value = lon.toFixed(3);
-  const f = familiarity(boxAround(lat, lon, SIZE_KM));
-  $("familiar").innerHTML = f.region
-    ? `${tag(f)} overlaps <b>${f.region.replace("_", " ")}</b>`
-    : `${tag(f)} the model never trained, tuned or tested here`;
 }
 
 /* ------------------------------------------------------------------ dial */
@@ -417,14 +389,6 @@ $("form").addEventListener("submit", run);
       + `${m.name} — ${m.classes - 1} classes, ${val}</option>`;
   }).join("");
   describeModel($("model").value);
-  $("places").innerHTML = PLACES.map((p, k) => {
-    const f = familiarity(boxAround(p.lat, p.lon, 20));
-    return `<button type="button" class="chip" data-k="${k}">${p.name}<i class="${f.status}">${TAG_TEXT[f.status]}</i></button>`;
-  }).join("");
-  $("places").querySelectorAll(".chip").forEach((b) => b.addEventListener("click", () => {
-    const p = PLACES[+b.dataset.k];
-    if (!busy) setPoint(p.lat, p.lon);
-  }));
   drawDialFrame(SHORT);
   buildMonthRow(SHORT.map((_, k) => `2021-${String(k + 1).padStart(2, "0")}`), null);
   setPoint(49.42, 8.6);

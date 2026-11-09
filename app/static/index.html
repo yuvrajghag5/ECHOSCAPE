@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wdth,wght@12..96,75..100,400..800&family=Atkinson+Hyperlegible:wght@400;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/static/style.css?v=4">
+  <link rel="stylesheet" href="/static/style.css?v=6">
 </head>
 <body>
 <div class="shell">
@@ -26,7 +26,6 @@
           <label>Latitude <input id="lat" type="number" step="0.001" min="-80" max="80" required></label>
           <label>Longitude <input id="lon" type="number" step="0.001" min="-180" max="180" required></label>
         </div>
-        <div id="familiar" class="familiar" aria-live="polite"></div>
       </fieldset>
 
       <fieldset>
@@ -43,11 +42,6 @@
 
       <button id="go" class="go" type="submit">Map 12 months</button>
     </form>
-
-    <section class="places" aria-label="Places to try">
-      <h2 class="eyebrow">Places to try</h2>
-      <div id="places" class="chips"></div>
-    </section>
 
     <section id="status" class="status" hidden aria-live="polite">
       <h2 class="eyebrow">Progress</h2>
@@ -122,6 +116,6 @@
   </section>
 </div>
 
-<script src="/static/app.js?v=4"></script>
+<script src="/static/app.js?v=6"></script>
 </body>
 </html>
