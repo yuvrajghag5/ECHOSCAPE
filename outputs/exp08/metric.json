@@ -1,0 +1,315 @@
+{
+  "name": "metric",
+  "rows": [
+    {
+      "run": "deeplab",
+      "split": "val",
+      "miou_9": 0.4896723602460155,
+      "miou_6_main": 0.7286011032910475,
+      "miou_support_0p5pct": 0.7286011032910475,
+      "miou_weighted_by_support": 0.7197904954616584,
+      "accuracy": 0.8211982230070964,
+      "per_class": {
+        "water": 0.8987077829534477,
+        "built-up": 0.8600578668935815,
+        "trees": 0.4073327240959872,
+        "cropland": 0.5545954982905741,
+        "grass": 0.6653127491342024,
+        "bare": 0.9855999983784923,
+        "shrub & scrub": 0.009767090308493365,
+        "flooded vegetation": 0.02567753215936056,
+        "snow & ice": 0.0
+      },
+      "support": {
+        "water": 4168440,
+        "built-up": 4184028,
+        "trees": 5075052,
+        "cropland": 4702548,
+        "grass": 3373332,
+        "bare": 4919256,
+        "shrub & scrub": 110676,
+        "flooded vegetation": 21768,
+        "snow & ice": 324
+      }
+    },
+    {
+      "run": "deeplab",
+      "split": "test",
+      "miou_9": 0.3031539900446098,
+      "miou_6_main": 0.45196456349182795,
+      "miou_support_0p5pct": 0.45196456349182795,
+      "miou_weighted_by_support": 0.5150262615260429,
+      "accuracy": 0.6410990085748696,
+      "per_class": {
+        "water": 0.6359845622671135,
+        "built-up": 0.709317930307329,
+        "trees": 0.6500199226371527,
+        "cropland": 0.29929030108037985,
+        "grass": 0.16487811028001406,
+        "bare": 0.25229655437897924,
+        "shrub & scrub": 0.0007720347260183474,
+        "flooded vegetation": 0.015826494724501757,
+        "snow & ice": 0.0
+      },
+      "support": {
+        "water": 2902647,
+        "built-up": 6531702,
+        "trees": 8656623,
+        "cropland": 4718091,
+        "grass": 1246460,
+        "bare": 4830276,
+        "shrub & scrub": 84700,
+        "flooded vegetation": 16811,
+        "snow & ice": 26076
+      }
+    },
+    {
+      "run": "segformer60",
+      "split": "val",
+      "miou_9": 0.5107256653997247,
+      "miou_6_main": 0.7569880319169169,
+      "miou_support_0p5pct": 0.7569880319169169,
+      "miou_weighted_by_support": 0.7547934266836414,
+      "accuracy": 0.8477576181799997,
+      "per_class": {
+        "water": 0.9075262736893196,
+        "built-up": 0.8361164765902304,
+        "trees": 0.6422413205747423,
+        "cropland": 0.6644243017938661,
+        "grass": 0.6212336419307576,
+        "bare": 0.8703861769225856,
+        "shrub & scrub": 0.0021628844958752878,
+        "flooded vegetation": 0.05243991260014567,
+        "snow & ice": 0.0
+      },
+      "support": {
+        "water": 4168440,
+        "built-up": 4184028,
+        "trees": 5075052,
+        "cropland": 4702548,
+        "grass": 3373332,
+        "bare": 4919256,
+        "shrub & scrub": 110676,
+        "flooded vegetation": 21768,
+        "snow & ice": 324
+      }
+    },
+    {
+      "run": "segformer60",
+      "split": "test",
+      "miou_9": 0.3153302856222884,
+      "miou_6_main": 0.4728545458080022,
+      "miou_support_0p5pct": 0.4728545458080022,
+      "miou_weighted_by_support": 0.5474744656681655,
+      "accuracy": 0.6791985258114995,
+      "per_class": {
+        "water": 0.5735567303561684,
+        "built-up": 0.6695014869184791,
+        "trees": 0.6782421745161035,
+        "cropland": 0.37770253284818844,
+        "grass": 0.11339712471120839,
+        "bare": 0.4247272254978652,
+        "shrub & scrub": 0.0005560777979319202,
+        "flooded vegetation": 0.0,
+        "snow & ice": 0.0002892179546506247
+      },
+      "support": {
+        "water": 2902647,
+        "built-up": 6531702,
+        "trees": 8656623,
+        "cropland": 4718091,
+        "grass": 1246460,
+        "bare": 4830276,
+        "shrub & scrub": 84700,
+        "flooded vegetation": 16811,
+        "snow & ice": 26076
+      }
+    },
+    {
+      "run": "segformer_big",
+      "split": "val",
+      "miou_9": 0.5108150319339025,
+      "miou_6_main": 0.7528486290902884,
+      "miou_support_0p5pct": 0.7528486290902884,
+      "miou_weighted_by_support": 0.7477439957872567,
+      "accuracy": 0.8402062042014468,
+      "per_class": {
+        "water": 0.9251333059107641,
+        "built-up": 0.8513881235812175,
+        "trees": 0.5615856582728427,
+        "cropland": 0.6120921938908892,
+        "grass": 0.64737742070454,
+        "bare": 0.9195150721814768,
+        "shrub & scrub": 0.007865878542936506,
+        "flooded vegetation": 0.07237763432045632,
+        "snow & ice": 0.0
+      },
+      "support": {
+        "water": 4168440,
+        "built-up": 4184028,
+        "trees": 5075052,
+        "cropland": 4702548,
+        "grass": 3373332,
+        "bare": 4919256,
+        "shrub & scrub": 110676,
+        "flooded vegetation": 21768,
+        "snow & ice": 324
+      }
+    },
+    {
+      "run": "segformer_big",
+      "split": "test",
+      "miou_9": 0.3273413523405382,
+      "miou_6_main": 0.49007697625570584,
+      "miou_support_0p5pct": 0.49007697625570584,
+      "miou_weighted_by_support": 0.5604562848876286,
+      "accuracy": 0.6808021993710076,
+      "per_class": {
+        "water": 0.5637672065379046,
+        "built-up": 0.7116659302341471,
+        "trees": 0.640927278780379,
+        "cropland": 0.3482297137303998,
+        "grass": 0.1339920810927252,
+        "bare": 0.5418796471586793,
+        "shrub & scrub": 0.0015682890582732385,
+        "flooded vegetation": 0.0,
+        "snow & ice": 0.004042024472334938
+      },
+      "support": {
+        "water": 2902647,
+        "built-up": 6531702,
+        "trees": 8656623,
+        "cropland": 4718091,
+        "grass": 1246460,
+        "bare": 4830276,
+        "shrub & scrub": 84700,
+        "flooded vegetation": 16811,
+        "snow & ice": 26076
+      }
+    },
+    {
+      "run": "segformer",
+      "split": "val",
+      "miou_9": 0.3714870419905443,
+      "miou_6_main": 0.552957009780611,
+      "miou_support_0p5pct": 0.552957009780611,
+      "miou_weighted_by_support": 0.5563299425216155,
+      "accuracy": 0.6335838207667104,
+      "per_class": {
+        "water": 0.8609406645493417,
+        "built-up": 0.8301403235402202,
+        "trees": 0.5220757345636012,
+        "cropland": 0.592980203221186,
+        "grass": 0.15882310666802535,
+        "bare": 0.35278202614129117,
+        "shrub & scrub": 0.01846796203358516,
+        "flooded vegetation": 0.00717335719764766,
+        "snow & ice": 0.0
+      },
+      "support": {
+        "water": 4168440,
+        "built-up": 4184028,
+        "trees": 5075052,
+        "cropland": 4702548,
+        "grass": 3373332,
+        "bare": 4919256,
+        "shrub & scrub": 110676,
+        "flooded vegetation": 21768,
+        "snow & ice": 324
+      }
+    },
+    {
+      "run": "segformer",
+      "split": "test",
+      "miou_9": 0.2640862838457282,
+      "miou_6_main": 0.3957993082748535,
+      "miou_support_0p5pct": 0.3957993082748535,
+      "miou_weighted_by_support": 0.4211318242321007,
+      "accuracy": 0.5265860730629648,
+      "per_class": {
+        "water": 0.5321816945645536,
+        "built-up": 0.6707049884218413,
+        "trees": 0.3084044941276426,
+        "cropland": 0.3702482492853056,
+        "grass": 0.14129459774437886,
+        "bare": 0.35196182550539895,
+        "shrub & scrub": 0.0007213154485572248,
+        "flooded vegetation": 0.0012593895138756476,
+        "snow & ice": 0.0
+      },
+      "support": {
+        "water": 2902647,
+        "built-up": 6531702,
+        "trees": 8656623,
+        "cropland": 4718091,
+        "grass": 1246460,
+        "bare": 4830276,
+        "shrub & scrub": 84700,
+        "flooded vegetation": 16811,
+        "snow & ice": 26076
+      }
+    },
+    {
+      "run": "unet16",
+      "split": "val",
+      "miou_9": 0.42041950061633987,
+      "miou_6_main": 0.6267575005402463,
+      "miou_support_0p5pct": 0.6267575005402463,
+      "miou_weighted_by_support": 0.6331741871033341,
+      "accuracy": 0.7070775446854096,
+      "per_class": {
+        "water": 0.9020084804261768,
+        "built-up": 0.8790871225580452,
+        "trees": 0.4075510415302128,
+        "cropland": 0.6151645619411796,
+        "grass": 0.1901177225422025,
+        "bare": 0.7666160742436607,
+        "shrub & scrub": 0.021543938166768258,
+        "flooded vegetation": 0.0016865641388128043,
+        "snow & ice": 0.0
+      },
+      "support": {
+        "water": 4168440,
+        "built-up": 4184028,
+        "trees": 5075052,
+        "cropland": 4702548,
+        "grass": 3373332,
+        "bare": 4919256,
+        "shrub & scrub": 110676,
+        "flooded vegetation": 21768,
+        "snow & ice": 324
+      }
+    },
+    {
+      "run": "unet16",
+      "split": "test",
+      "miou_9": 0.32778493004986875,
+      "miou_6_main": 0.4898802693290974,
+      "miou_support_0p5pct": 0.4898802693290974,
+      "miou_weighted_by_support": 0.5496197878657165,
+      "accuracy": 0.640424182134412,
+      "per_class": {
+        "water": 0.7468222465805404,
+        "built-up": 0.8182972054637216,
+        "trees": 0.5941920427774134,
+        "cropland": 0.3759981980299741,
+        "grass": 0.12154781214272921,
+        "bare": 0.2824241109802055,
+        "shrub & scrub": 0.0010402276795007971,
+        "flooded vegetation": 0.0029196974526907583,
+        "snow & ice": 0.0068228293420427785
+      },
+      "support": {
+        "water": 2902647,
+        "built-up": 6531702,
+        "trees": 8656623,
+        "cropland": 4718091,
+        "grass": 1246460,
+        "bare": 4830276,
+        "shrub & scrub": 84700,
+        "flooded vegetation": 16811,
+        "snow & ice": 26076
+      }
+    }
+  ]
+}

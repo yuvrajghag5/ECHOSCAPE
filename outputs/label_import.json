@@ -300,6 +300,99 @@
       }
     },
     {
+      "aoi": "vatnajokull",
+      "radar": "vatnajokull_2021-01_50m.tif",
+      "crop_to_grass": 0,
+      "crop_to_bare": 0,
+      "coverage": 1.0,
+      "median_views": 20.0,
+      "classes": {
+        "snow & ice": 1.0
+      }
+    },
+    {
+      "aoi": "baltoro",
+      "radar": "baltoro_2021-01_50m.tif",
+      "crop_to_grass": 0,
+      "crop_to_bare": 0,
+      "coverage": 0.6174,
+      "median_views": 1.0,
+      "classes": {
+        "water": 0.006827777777777778,
+        "built-up": 1.6666666666666667e-05,
+        "trees": 0.00018333333333333334,
+        "grass": 0.00019722222222222222,
+        "bare": 0.16931944444444444,
+        "shrub & scrub": 0.0008833333333333333,
+        "snow & ice": 0.4399722222222222
+      }
+    },
+    {
+      "aoi": "sudd",
+      "radar": "sudd_2021-01_50m.tif",
+      "crop_to_grass": 0,
+      "crop_to_bare": 0,
+      "coverage": 0.42327777777777775,
+      "median_views": 60.0,
+      "classes": {
+        "water": 0.13143055555555555,
+        "built-up": 0.00030555555555555555,
+        "trees": 0.10346388888888888,
+        "cropland": 0.006147222222222222,
+        "grass": 0.09377222222222223,
+        "shrub & scrub": 0.013897222222222222,
+        "flooded vegetation": 0.07426111111111111
+      }
+    },
+    {
+      "aoi": "everglades",
+      "radar": "everglades_2021-01_50m.tif",
+      "crop_to_grass": 0,
+      "crop_to_bare": 0,
+      "coverage": 0.4577888888888889,
+      "median_views": 14.0,
+      "classes": {
+        "water": 0.013372222222222223,
+        "built-up": 0.00105,
+        "trees": 0.10465555555555556,
+        "grass": 0.001425,
+        "bare": 5.833333333333333e-05,
+        "shrub & scrub": 0.03216666666666667,
+        "flooded vegetation": 0.3050583333333333,
+        "snow & ice": 2.777777777777778e-06
+      }
+    },
+    {
+      "aoi": "sonoran",
+      "radar": "sonoran_2021-01_50m.tif",
+      "crop_to_grass": 2611,
+      "crop_to_bare": 1588,
+      "coverage": 0.7479027777777778,
+      "median_views": 94.0,
+      "classes": {
+        "water": 0.00038055555555555553,
+        "built-up": 0.00793888888888889,
+        "trees": 2.5e-05,
+        "cropland": 5.555555555555556e-05,
+        "grass": 0.007252777777777778,
+        "bare": 0.5709722222222222,
+        "shrub & scrub": 0.16127777777777777
+      }
+    },
+    {
+      "aoi": "kalahari",
+      "radar": "kalahari_2021-01_50m.tif",
+      "crop_to_grass": 0,
+      "crop_to_bare": 0,
+      "coverage": 0.9473472222222222,
+      "median_views": 52.0,
+      "classes": {
+        "trees": 1.1111111111111112e-05,
+        "bare": 0.002588888888888889,
+        "shrub & scrub": 0.9447472222222222
+      }
+    },
+    {
       "aoi": "mannheim",
       "radar": "mannheim_2021-01_50m.tif",
       "crop_to_grass": 4036,

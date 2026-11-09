@@ -1,0 +1,91 @@
+{
+  "name": "audit",
+  "counts": {
+    "train": [
+      20979497,
+      8211912,
+      15467580,
+      12604649,
+      18989892,
+      4802976,
+      20003904,
+      6604476,
+      1967364,
+      7742726
+    ],
+    "val": [
+      2935776,
+      4168440,
+      4184028,
+      5075052,
+      4702548,
+      3373332,
+      4919256,
+      110676,
+      21768,
+      324
+    ],
+    "test": [
+      5393014,
+      2902647,
+      6531702,
+      8656623,
+      4718091,
+      1246460,
+      4830276,
+      84700,
+      16811,
+      26076
+    ]
+  },
+  "regions": {
+    "train": [
+      "amazon",
+      "arabia",
+      "atacama",
+      "baltoro",
+      "cairo",
+      "delhi",
+      "egypt_desert",
+      "everglades",
+      "finland",
+      "ijsselmeer",
+      "iowa",
+      "kalahari",
+      "kenya",
+      "mekong",
+      "mongolia",
+      "nile_delta",
+      "nsw",
+      "oregon",
+      "pampas",
+      "punjab",
+      "randstad",
+      "sonoran",
+      "sudd",
+      "vatnajokull"
+    ],
+    "val": [
+      "beauce",
+      "black_forest",
+      "chesapeake",
+      "namib",
+      "paris",
+      "serengeti"
+    ],
+    "test": [
+      "congo",
+      "death_valley",
+      "ireland",
+      "kansas",
+      "lake_geneva",
+      "mannheim",
+      "tokyo"
+    ]
+  },
+  "tiles": {
+    "train": 7164,
+    "val": 1800,
+    "test": 2100
+  }
+}
