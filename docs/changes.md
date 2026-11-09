@@ -1155,7 +1155,42 @@ model fits the training regions more closely, which can widen that gap.
 Either outcome is a finding: a gain means the small networks were holding
 the scores back; no gain means the data is.
 
-**Result.** Pending: run the notebook.
+**Result (run on the datalab, 9 November).**
+
+| | parameters | validation | test, 9 classes | test, 6 main |
+|---|---|---|---|---|
+| SegFormer | 2.3 M | **51.3%** | 31.1% | 46.6% |
+| SegFormer, big | 27.4 M | 51.1% | **32.7%** | **49.0%** |
+| DeepLabV3+ | 2.3 M | 49.0% | 30.3% | 45.2% |
+| U-Net | 1.9 M | 42.1% | 31.1% | 46.6% |
+
+| test IoU | water | built-up | trees | cropland | grass | bare |
+|---|---|---|---|---|---|---|
+| SegFormer | 57.9 | 65.4 | 65.0 | 35.6 | 11.7 | 44.2 |
+| SegFormer, big | 56.4 | 71.2 | 64.1 | 34.8 | 13.4 | 54.2 |
+
+(the three rare classes stay at 0-0.4% for every model)
+
+- **12x the parameters, no gain on validation** (51.1% against 51.3%).
+- **On test, +1.6 points (9 classes) and +2.4 (6 main),** almost all from two
+  classes: bare (+10.0) and built-up (+5.8). Test bare comes mostly from one
+  region, Death Valley, so this is one region moving, not a broad gain.
+  Trees, cropland and water barely move or drop.
+- **Conclusion: the small networks were not what held the scores back.** A
+  model 12x larger learns the same classes to the same level. The limits are
+  in the data:
+  - cropland, grass and trees look alike to one month of radar;
+  - shrub, flooded vegetation and snow are 1.16%, 0.03% and 0.87% of the
+    training pixels. Flooded vegetation is about one tile's worth in all of
+    training.
+- The prototype still picks the run by validation, so it keeps the small
+  SegFormer (51.3% > 51.1%). Choosing the big one for its test score would be
+  using the test set to choose, which it must not be.
+- The test confusion matrix (big model) shows two more patterns:
+  - 32% of test water is called grass;
+  - snow goes to cropland 83% of the time.
+- Notebook 05 (`segformer60`) was not run; this run already answers the
+  question it was for.
 
 ---
 # Phase 6 — Evaluation

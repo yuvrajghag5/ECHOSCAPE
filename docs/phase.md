@@ -60,6 +60,8 @@ exports only those 12.
    run `segformer60`) - does longer training help? (`changes.md` Phase 5 §8).
    And `notebooks/06_segformer_big.ipynb` (27.4 M-parameter SegFormer, run
    `segformer_big`, on the datalab A6000) - does a bigger model help? (§9).
+   **Done 9 Nov:** validation 51.1% (no gain), test 32.7% / 49.0% (6 main).
+   Model size is not the limit.
    Code pushed to GitHub; tiles go to the university data lab separately
    (they are ~700 MB and stay out of git), training runs there.
 5. **How the land changed over the year** - `notebooks/04_monthly_change.ipynb`

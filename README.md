@@ -19,7 +19,7 @@ Google Dynamic World, built from Sentinel-2 — and is then thrown away.
 | 2c. Choose regions worldwide | **done** — 31 regions: 18 train, 6 validation, 7 test |
 | 3. Labels | **Dynamic World** for every region, all nine of its classes |
 | 4. Assemble the dataset | **done** — nine classes |
-| 5. Train | **done** — three architectures from scratch; SegFormer best on validation (51.3%), all three tie on test (~31% over 9 classes, ~47% over the 6 main ones) |
+| 5. Train | **done** — three architectures from scratch; SegFormer best on validation (51.3%), all three tie on test (~31% over 9 classes, ~47% over the 6 main ones); a 12x bigger SegFormer (27 M parameters) gains nothing on validation (51.1%) and +2.4 on test, so the data, not model size, is the limit |
 | 6. Evaluate | monthly change run on the 7 test regions; Dynamic World check pending |
 | 7. Prototype | **built** — `app/`, a web page: any point on Earth, any 12 months since 2017 |
 
